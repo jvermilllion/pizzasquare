@@ -23,6 +23,7 @@ interface DeliveryRoutesProps {
   onOrderSelect: (order: Order) => void;
   onArchiveRoute?: (routeId: string) => void;
   onMoveOrderBetweenRoutes?: (orderId: string, fromRouteIndex: number, toRouteIndex: number) => void;
+  onMoveOrderToQueue?: (orderId: string) => void;
 }
 
 interface RouteGroup {
@@ -181,11 +182,13 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
   onUpdateOrderStatus, 
   onOrderSelect,
   onArchiveRoute,
-  onMoveOrderBetweenRoutes
+  onMoveOrderBetweenRoutes,
+  onMoveOrderToQueue
 }) => {
   const [archivedRoutes, setArchivedRoutes] = useState<string[]>([]);
   const [showHistory, setShowHistory] = useState(false);
-  const [draggedOrder, setDraggedOrder] = useState<{ order: Order; routeIndex: number } | null>(null);
+  const [draggedOrder, setDraggedOrder] = useState<{ order: Order; routeIndex: number; fromQueue?: boolean } | null>(null);
+  const [dragOverTarget, setDragOverTarget] = useState<{ type: 'route' | 'queue'; index?: number } | null>(null);
   const [dragState, setDragState] = useState<{
     routeId: string | null;
     offset: number;
@@ -217,26 +220,70 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
     }
   };
 
-  const handleOrderDragStart = (e: React.DragEvent, order: Order, routeIndex: number) => {
-    setDraggedOrder({ order, routeIndex });
+  const handleMoveOrderToQueue = (orderId: string) => {
+    if (onMoveOrderToQueue) {
+      onMoveOrderToQueue(orderId);
+    }
+  };
+
+  const handleOrderDragStart = (e: React.DragEvent, order: Order, routeIndex: number, fromQueue: boolean = false) => {
+    setDraggedOrder({ order, routeIndex, fromQueue });
     e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', order.id);
   };
 
   const handleOrderDragEnd = () => {
     setDraggedOrder(null);
+    setDragOverTarget(null);
+  };
+
+  const handleRouteDragOver = (e: React.DragEvent, targetRouteIndex: number) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverTarget({ type: 'route', index: targetRouteIndex });
+  };
+
+  const handleRouteDragLeave = (e: React.DragEvent) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setDragOverTarget(null);
+    }
   };
 
   const handleRouteDrop = (e: React.DragEvent, targetRouteIndex: number) => {
     e.preventDefault();
-    if (draggedOrder && draggedOrder.routeIndex !== targetRouteIndex) {
+    setDragOverTarget(null);
+    
+    if (!draggedOrder) return;
+    
+    if (draggedOrder.fromQueue) {
+      // Moving from queue to route - this would need to be handled by parent
+      console.log('Move from queue to route', draggedOrder.order.id, targetRouteIndex);
+    } else if (draggedOrder.routeIndex !== targetRouteIndex) {
       handleMoveOrder(draggedOrder.order.id, draggedOrder.routeIndex, targetRouteIndex);
     }
     setDraggedOrder(null);
   };
 
-  const handleRouteDragOver = (e: React.DragEvent) => {
+  const handleQueueDragOver = (e: React.DragEvent) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
+    setDragOverTarget({ type: 'queue' });
+  };
+
+  const handleQueueDragLeave = (e: React.DragEvent) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      setDragOverTarget(null);
+    }
+  };
+
+  const handleQueueDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    setDragOverTarget(null);
+    
+    if (draggedOrder && !draggedOrder.fromQueue) {
+      handleMoveOrderToQueue(draggedOrder.order.id);
+    }
+    setDraggedOrder(null);
   };
 
   const handleTouchStart = (e: React.TouchEvent, routeId: string) => {
