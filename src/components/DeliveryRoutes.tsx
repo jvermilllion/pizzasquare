@@ -29,6 +29,7 @@ interface RouteGroup {
   name: string;
   orders: Order[];
   totalValue: number;
+  estimatedTime: number;
   googleMapsUrl: string;
   color: string;
 }
@@ -54,6 +55,35 @@ function generateGoogleMapsUrl(orders: Order[]): string {
     .join('/');
   
   return `https://www.google.com/maps/dir/${origin}/${waypoints}/${origin}`;
+}
+
+// Calculate estimated route time
+function calculateRouteTime(orders: Order[]): number {
+  if (orders.length === 0) return 0;
+  
+  let totalTime = 0;
+  let currentLocation = restaurantLocation;
+  
+  orders.forEach(order => {
+    // Calculate distance to this order
+    const distance = calculateDistance(
+      currentLocation.lat, currentLocation.lng,
+      order.deliveryLocation.lat, order.deliveryLocation.lng
+    );
+    
+    // Add travel time (2.5 minutes per mile) + delivery time (3 minutes per stop)
+    totalTime += distance * 2.5 + 3;
+    currentLocation = order.deliveryLocation;
+  });
+  
+  // Add return time to restaurant
+  const returnDistance = calculateDistance(
+    currentLocation.lat, currentLocation.lng,
+    restaurantLocation.lat, restaurantLocation.lng
+  );
+  totalTime += returnDistance * 2.5;
+  
+  return Math.round(totalTime);
 }
 
 // Group orders into 45-minute round trip routes using nearest neighbor algorithm
@@ -133,6 +163,7 @@ function groupOrdersIntoRoutes(orders: Order[]): RouteGroup[] {
         name: `Route ${routeCounter}`,
         orders: currentRoute,
         totalValue,
+        estimatedTime: calculateRouteTime(currentRoute),
         googleMapsUrl: generateGoogleMapsUrl(currentRoute),
         color: ROUTE_COLORS[(routeCounter - 1) % ROUTE_COLORS.length]
       });
