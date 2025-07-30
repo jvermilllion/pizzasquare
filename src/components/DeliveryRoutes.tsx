@@ -273,18 +273,6 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
                     </div>
                   </div>
                   <div className="flex items-center space-x-2 flex-shrink-0">
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        window.open(`tel:${order.customerPhone}`, '_self');
-                      }}
-                      className={`${
-                        isArchived ? 'text-gray-400' : 'text-blue-600 hover:text-blue-700'
-                      }`}
-                      disabled={isArchived}
-                    >
-                      <Phone className="w-3 h-3" />
-                    </button>
                   </div>
                 </div>
               ))}
