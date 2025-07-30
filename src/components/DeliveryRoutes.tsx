@@ -3,6 +3,20 @@ import { Order } from '../types/orders';
 import { restaurantLocation } from '../data/realData';
 import { MapPin, Truck, Phone, Archive, History, X, Check } from 'lucide-react';
 
+// Color palette for routes
+const ROUTE_COLORS = [
+  '#ef4444', // red
+  '#3b82f6', // blue  
+  '#10b981', // green
+  '#f59e0b', // yellow
+  '#8b5cf6', // purple
+  '#ec4899', // pink
+  '#f97316', // orange
+  '#06b6d4', // cyan
+  '#84cc16', // lime
+  '#6366f1', // indigo
+];
+
 interface DeliveryRoutesProps {
   orders: Order[];
   onUpdateOrderStatus: (orderId: string, status: Order['status']) => void;
@@ -16,6 +30,7 @@ interface RouteGroup {
   orders: Order[];
   totalValue: number;
   googleMapsUrl: string;
+  color: string;
 }
 
 // Calculate distance between two points using Haversine formula
@@ -118,7 +133,8 @@ function groupOrdersIntoRoutes(orders: Order[]): RouteGroup[] {
         name: `Route ${routeCounter}`,
         orders: currentRoute,
         totalValue,
-        googleMapsUrl: generateGoogleMapsUrl(currentRoute)
+        googleMapsUrl: generateGoogleMapsUrl(currentRoute),
+        color: ROUTE_COLORS[(routeCounter - 1) % ROUTE_COLORS.length]
       });
       
       routeCounter++;
@@ -335,9 +351,10 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
             {/* Compact Route Header */}
             <div className={`${
               isArchived ? 'bg-gray-500' : 'bg-blue-500'
-            } text-white p-2 rounded-t flex items-center justify-between`}>
+            } text-white p-2 rounded-t flex items-center justify-between`}
+            style={!isArchived ? { backgroundColor: route.color } : {}}>
               <div className="flex items-center">
-                <div className="w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center font-bold text-xs mr-2">
+                <div className="w-6 h-6 bg-white bg-opacity-30 rounded-full flex items-center justify-center font-bold text-xs mr-2">
                   {routeIndex + 1}
                 </div>
                 <span className="font-medium text-sm">
@@ -381,6 +398,10 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
                     <div className="w-5 h-5 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-bold mr-2 flex-shrink-0">
                       {orderIndex + 1}
                     </div>
+                    <div 
+                      className="w-2 h-2 rounded-full mr-2 flex-shrink-0"
+                      style={{ backgroundColor: route.color }}
+                    ></div>
                     <div className="min-w-0 flex-1">
                       <div className="font-medium truncate">{order.customerName}</div>
                       <div className="text-xs text-gray-600 truncate">{order.deliveryAddress}</div>
