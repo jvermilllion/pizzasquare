@@ -317,6 +317,10 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
             onMouseDown={(e) => !isArchived && handleMouseDown(e, route.id)}
+            onTouchStart={(e) => !isArchived && handleTouchStart(e, route.id)}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onMouseDown={(e) => !isArchived && handleMouseDown(e, route.id)}
           >
             {/* Archive indicator that appears when dragging */}
             {dragState.routeId === route.id && dragState.offset < -40 && (
