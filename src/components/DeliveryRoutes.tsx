@@ -413,28 +413,29 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
                     className={`border border-gray-200 rounded p-2 cursor-pointer transition-all hover:shadow-sm ${
                       selectedOrder === order.id ? 'ring-2 ring-blue-500' : ''
                     } ${
-                      draggedOrder?.id === order.id ? 'opacity-50 transform rotate-1' : ''
+                      draggedOrder?.order.id === order.id ? 'opacity-50 transform rotate-1' : ''
                     }`}
                     onClick={() => onOrderSelect(order)}
                     draggable={!isArchived}
                     onDragStart={!isArchived ? (e) => handleOrderDragStart(e, order, routeIndex) : undefined}
                     onDragEnd={!isArchived ? handleOrderDragEnd : undefined}
                     title={!isArchived ? "Drag to move to another route or back to queue" : ""}
-                            className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold text-xs mr-2 flex-shrink-0"
+                  >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
                         <div
-                          className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold text-xs mr-2"
-                          <div className="min-w-0 flex-1">
+                          className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold text-xs mr-2 flex-shrink-0"
+                          style={{ backgroundColor: route.color }}
                         >
-                            <div className="text-xs text-gray-500 truncate">{order.deliveryAddress}</div>
+                          {orderIndex + 1}
                         </div>
-                        <div>
-                        <div className="text-right flex-shrink-0 ml-2">
-                          <div className="text-xs text-gray-500 truncate max-w-[200px]">{order.deliveryAddress}</div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-sm font-medium text-gray-900 truncate">{order.customerName}</div>
+                          <div className="text-xs text-gray-500 truncate">{order.deliveryAddress}</div>
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right flex-shrink-0 ml-2">
+                        <div className="text-sm font-medium text-gray-900">${order.totalAmount.toFixed(2)}</div>
                         <div className="text-xs text-gray-600 font-medium">{order.distance}</div>
                       </div>
                     </div>
