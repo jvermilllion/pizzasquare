@@ -423,6 +423,189 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
           </p>
         </div>
       )}
+
+      {/* Routes Display */}
+      <div className="space-y-3">
+        {displayRoutes.map((route, routeIndex) => {
+          const isArchived = archivedRoutes.includes(route.id);
+          const isDropTarget = dragOverRoute === routeIndex;
+          const isDragging = dragState.isDragging && dragState.routeId === route.id;
+          
+          return (
+            <div
+              key={route.id}
+              className={`relative bg-white border-2 rounded-lg transition-all duration-200 ${
+                isArchived ? 'opacity-60' : ''
+              } ${
+                isDropTarget ? 'border-blue-400 bg-blue-50 border-2 shadow-lg' : 'border-gray-200'
+              } ${
+                isDragging ? 'transform scale-95 opacity-50' : ''
+              }`}
+              style={{
+                transform: isDragging ? `translateX(${dragState.offset}px)` : 'none'
+              }}
+              onDragOver={!isArchived ? (e) => handleRouteDragOver(e, routeIndex) : undefined}
+              onDragLeave={!isArchived ? handleRouteDragLeave : undefined}
+              onDrop={!isArchived ? (e) => handleRouteDrop(e, routeIndex) : undefined}
+              onTouchStart={!isArchived ? (e) => handleTouchStart(e, route.id) : undefined}
+              onTouchMove={!isArchived ? handleTouchMove : undefined}
+              onTouchEnd={!isArchived ? handleTouchEnd : undefined}
+              onMouseDown={!isArchived ? (e) => handleMouseDown(e, route.id) : undefined}
+            >
+              {/* Route Header */}
+              <div className="p-4 border-b border-gray-100">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center">
+                    <div
+                      className="w-6 h-6 rounded-full mr-3 flex-shrink-0 border-2 border-white shadow-sm"
+                      style={{ backgroundColor: route.color }}
+                    />
+                    <div>
+                      <h4 className="font-bold text-gray-900">{route.name}</h4>
+                      <div className="text-sm text-gray-600">
+                        {route.orders.length} stops • ${route.totalValue.toFixed(2)} • ~{route.estimatedTime}min
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    {!isArchived && (
+                      <button
+                        onClick={() => window.open(route.googleMapsUrl, '_blank')}
+                        className="text-blue-600 hover:text-blue-700 p-1"
+                        title="Open in Google Maps"
+                      >
+                        🗺️
+                      </button>
+                    )}
+                    {!showHistory && (
+                      <button
+                        onClick={() => handleArchiveRoute(route.id)}
+                        className="text-red-600 hover:text-red-700 p-1"
+                        title="Archive route"
+                      >
+                        📦
+                      </button>
+                    )}
+                    {showHistory && (
+                      <button
+                        onClick={() => handleUnarchiveRoute(route.id)}
+                        className="text-green-600 hover:text-green-700 p-1"
+                        title="Restore route"
+                      >
+                        ↩️
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Drop Zone Indicator */}
+              {isDropTarget && draggedOrder && (
+                <div className="absolute inset-0 bg-blue-100 bg-opacity-90 border-2 border-dashed border-blue-400 rounded-lg flex items-center justify-center z-10">
+                  <div className="text-blue-700 font-bold text-center">
+                    <div className="text-lg mb-1">📦</div>
+                    <div>Drop order here</div>
+                    <div className="text-sm">Move to {route.name}</div>
+                  </div>
+                </div>
+              )}
+
+              {/* Orders List */}
+              <div className="p-4 space-y-3">
+                {route.orders.map((order, orderIndex) => (
+                  <div
+                    key={order.id}
+                    className={`border border-gray-200 rounded-lg p-3 cursor-pointer transition-all hover:shadow-sm ${
+                      selectedOrder === order.id ? 'ring-2 ring-blue-500' : ''
+                    } ${
+                      draggedOrder?.id === order.id ? 'opacity-50 transform rotate-1' : ''
+                    }`}
+                    onClick={() => onOrderSelect(order)}
+                    draggable={!isArchived}
+                    onDragStart={!isArchived ? (e) => handleOrderDragStart(e, order, routeIndex) : undefined}
+                    onDragEnd={!isArchived ? handleOrderDragEnd : undefined}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center">
+                        <div
+                          className="w-6 h-6 rounded-full flex items-center justify-center text-white font-bold text-xs mr-3"
+                          style={{ backgroundColor: route.color }}
+                        >
+                          {orderIndex + 1}
+                        </div>
+                        <div>
+                          <div className="font-medium text-sm">{order.customerName}</div>
+                          <div className="text-xs text-gray-500">#{order.squareOrderId.slice(-4)}</div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-bold text-green-600 text-sm">
+                          ${order.totalAmount.toFixed(2)}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {order.distance} • {order.deliveryTime}
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div className="text-xs text-gray-600 mb-2 truncate">
+                      📍 {order.deliveryAddress}
+                    </div>
+                    
+                    {order.specialInstructions && (
+                      <div className="bg-yellow-50 border border-yellow-200 p-2 rounded text-xs text-yellow-700 mb-2">
+                        💡 {order.specialInstructions}
+                      </div>
+                    )}
+                    
+                    <div className="text-xs text-gray-500">
+                      Items: {order.items.map(item => `${item.quantity}x ${item.name}`).join(', ')}
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Archive Hint */}
+              {!isArchived && !showHistory && (
+                <div className="px-4 pb-4">
+                  <div className="text-xs text-gray-400 text-center">
+                    💡 Swipe left or drag left to archive • Drag orders to reorganize
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Queue Drop Zone - Only show when dragging */}
+      {draggedOrder && (
+        <div 
+          className={`mt-4 border-2 border-dashed rounded-lg p-4 text-center transition-all ${
+            dragOverRoute === -1 
+              ? 'border-green-400 bg-green-50' 
+              : 'border-gray-300 bg-gray-50'
+          }`}
+          onDragOver={(e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            setDragOverRoute(-1);
+          }}
+          onDragLeave={(e) => {
+            if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+              setDragOverRoute(null);
+            }
+          }}
+          onDrop={handleQueueDrop}
+        >
+          <div className="text-green-600">
+            📦 <strong>Drop here to move back to queue</strong>
+          </div>
+          <div className="text-xs text-green-500 mt-1">
+            Order will be unassigned from route
+          </div>
+        </div>
+      )}
     </div>
   );
 };
