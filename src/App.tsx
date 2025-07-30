@@ -67,6 +67,16 @@ function App() {
     ));
   };
 
+  // Handle reordering within a route
+  const handleReorderWithinRoute = (orderId: string, routeIndex: number, newPosition: number) => {
+    // For now, log the reordering action
+    // In a full implementation, this would update the order positions within the route
+    console.log('Reordering within route:', { orderId, routeIndex, newPosition });
+    
+    // TODO: Implement actual reordering logic when route persistence is added
+    // This would involve updating order positions or route-specific ordering metadata
+  };
+
   // Get active orders ready for delivery
   const activeOrders = useMemo(() => {
     return orders.filter(order => 
