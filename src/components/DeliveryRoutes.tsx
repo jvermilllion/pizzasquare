@@ -229,7 +229,7 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
                   <>
                     <button
                       onClick={() => window.open(route.googleMapsUrl, '_blank')}
-                      className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white p-1.5 rounded transition-colors"
+                      className="bg-white bg-opacity-20 hover:bg-opacity-30 text-white p-1.5 transition-colors"
                       title="Open route in Google Maps"
                     >
                       <Truck className="w-4 h-4" />
