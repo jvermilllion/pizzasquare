@@ -212,7 +212,17 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
     // Add error handler for map
     map.current.on('error', (e) => {
       console.error('Mapbox error:', e);
-      setMapError('Map loading error. Please check your Mapbox token permissions.');
+      if (e.error && e.error.message) {
+        if (e.error.message.includes('401')) {
+          setMapError('Invalid Mapbox token. Please check your VITE_MAPBOX_TOKEN in .env file.');
+        } else if (e.error.message.includes('403')) {
+          setMapError('Mapbox token lacks required permissions. Ensure it has styles:read, tiles:read, and fonts:read permissions.');
+        } else {
+          setMapError(`Mapbox error: ${e.error.message}`);
+        }
+      } else {
+        setMapError('Map loading error. Please check your Mapbox token and internet connection.');
+      }
     });
 
     map.current.on('load', () => {
