@@ -1,12 +1,5 @@
-import { Client, Environment } from 'squareup';
-
-// Square API client configuration
-const client = new Client({
-  accessToken: import.meta.env.VITE_SQUARE_ACCESS_TOKEN,
-  environment: import.meta.env.VITE_SQUARE_ENVIRONMENT === 'production' 
-    ? Environment.Production 
-    : Environment.Sandbox
-});
+// Mock Square API implementation for browser environment
+// The actual Square SDK should run on a backend server
 
 export interface SquareOrderData {
   id: string;
@@ -99,52 +92,33 @@ function mapSquareStateToStatus(orderState: string, fulfillmentState?: string): 
   return 'pending';
 }
 
-// Fetch orders from Square
+// Mock implementation - in production, this should call your backend API
 export async function fetchSquareOrders(locationId: string): Promise<any[]> {
   try {
-    const { result } = await client.ordersApi.searchOrders({
-      locationIds: [locationId],
-      query: {
-        filter: {
-          stateFilter: {
-            states: ['OPEN', 'COMPLETED']
-          },
-          dateTimeFilter: {
-            createdAt: {
-              startAt: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(), // Last 24 hours
-              endAt: new Date().toISOString()
-            }
-          }
-        },
-        sort: {
-          sortField: 'CREATED_AT',
-          sortOrder: 'DESC'
-        }
-      }
-    });
-
-    return result.orders?.map(convertSquareOrder) || [];
+    // This should call your backend API endpoint instead
+    // Example: const response = await fetch('/api/square/orders');
+    
+    console.warn('Square API integration requires a backend server. Using mock data for demo.');
+    
+    // Return empty array for now - you'll need to implement backend integration
+    return [];
   } catch (error) {
     console.error('Error fetching Square orders:', error);
     throw error;
   }
 }
 
-// Update order fulfillment state in Square
+// Mock implementation - in production, this should call your backend API
 export async function updateSquareOrderFulfillment(
   orderId: string, 
   fulfillmentUid: string, 
   state: string
 ): Promise<void> {
   try {
-    await client.ordersApi.updateOrder(orderId, {
-      order: {
-        fulfillments: [{
-          uid: fulfillmentUid,
-          state: state
-        }]
-      }
-    });
+    // This should call your backend API endpoint instead
+    // Example: await fetch('/api/square/orders/update', { method: 'POST', ... });
+    
+    console.warn('Square API integration requires a backend server.');
   } catch (error) {
     console.error('Error updating Square order:', error);
     throw error;
