@@ -1,19 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Order } from '../types/orders';
 import { restaurantLocation } from '../data/realData';
-import { MapPin, Truck, Phone, Archive, History, X, Check, Package } from 'lucide-react';
-
-// Route colors for visual separation
-const ROUTE_COLORS = [
-  { bg: 'bg-blue-500', light: 'bg-blue-50', border: 'border-blue-200', text: 'text-blue-700' },
-  { bg: 'bg-green-500', light: 'bg-green-50', border: 'border-green-200', text: 'text-green-700' },
-  { bg: 'bg-purple-500', light: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700' },
-  { bg: 'bg-orange-500', light: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700' },
-  { bg: 'bg-pink-500', light: 'bg-pink-50', border: 'border-pink-200', text: 'text-pink-700' },
-  { bg: 'bg-indigo-500', light: 'bg-indigo-50', border: 'border-indigo-200', text: 'text-indigo-700' },
-  { bg: 'bg-teal-500', light: 'bg-teal-50', border: 'border-teal-200', text: 'text-teal-700' },
-  { bg: 'bg-red-500', light: 'bg-red-50', border: 'border-red-200', text: 'text-red-700' },
-];
+import { MapPin, Truck, Phone, Archive, History, X, Check } from 'lucide-react';
 
 interface DeliveryRoutesProps {
   orders: Order[];
@@ -220,16 +208,15 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
       <div className="space-y-2">
         {displayRoutes.map((route, routeIndex) => {
           const isArchived = archivedRoutes.includes(route.id);
-          const routeColor = ROUTE_COLORS[routeIndex % ROUTE_COLORS.length];
           
           return (
-          <div key={route.id} className={`bg-white border-2 rounded-lg ${routeColor.border}`}>
+          <div key={route.id} className="bg-white border border-gray-200 rounded">
             {/* Compact Route Header */}
             <div className={`${
-              isArchived ? 'bg-gray-500' : routeColor.bg
+              isArchived ? 'bg-gray-500' : 'bg-blue-500'
             } text-white p-2 rounded-t flex items-center justify-between`}>
               <div className="flex items-center">
-                <div className="w-7 h-7 bg-white bg-opacity-25 rounded-full flex items-center justify-center font-bold text-sm mr-2 border border-white border-opacity-30">
+                <div className="w-6 h-6 bg-white bg-opacity-20 rounded-full flex items-center justify-center font-bold text-xs mr-2">
                   {routeIndex + 1}
                 </div>
                 <span className="font-medium text-sm">
@@ -269,19 +256,19 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
             </div>
             
             {/* Compact Orders List */}
-            <div className={`p-3 space-y-2 ${routeColor.light}`}>
+            <div className="p-2 space-y-1">
               {route.orders.map((order, orderIndex) => (
                 <div 
                   key={order.id}
-                  className={`flex items-center justify-between p-3 bg-white rounded-lg border ${routeColor.border} hover:shadow-sm cursor-pointer transition-all`}
+                  className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm hover:bg-gray-100 cursor-pointer"
                   onClick={() => onOrderSelect(order)}
                 >
                   <div className="flex items-center flex-1 min-w-0">
-                    <div className={`w-6 h-6 ${routeColor.light} ${routeColor.text} rounded-full flex items-center justify-center text-xs font-bold mr-3 flex-shrink-0 border ${routeColor.border}`}>
+                    <div className="w-5 h-5 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-bold mr-2 flex-shrink-0">
                       {orderIndex + 1}
                     </div>
                     <div className="min-w-0 flex-1">
-                      <div className="font-semibold truncate text-gray-900">{order.customerName}</div>
+                      <div className="font-medium truncate">{order.customerName}</div>
                       <div className="text-xs text-gray-600 truncate">{order.deliveryAddress}</div>
                     </div>
                   </div>
@@ -291,12 +278,12 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
                         e.stopPropagation();
                         window.open(`tel:${order.customerPhone}`, '_self');
                       }}
-                      className={`p-1 rounded transition-colors ${
-                        isArchived ? 'text-gray-400' : `${routeColor.text} hover:bg-white`
+                      className={`${
+                        isArchived ? 'text-gray-400' : 'text-blue-600 hover:text-blue-700'
                       }`}
                       disabled={isArchived}
                     >
-                      <Phone className="w-4 h-4" />
+                      <Phone className="w-3 h-3" />
                     </button>
                   </div>
                 </div>
