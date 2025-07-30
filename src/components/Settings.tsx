@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Settings as SettingsIcon, Square, RefreshCw, Save, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Settings as SettingsIcon, Square, RefreshCw, Save, AlertTriangle, CheckCircle, ArrowLeft } from 'lucide-react';
 
 interface SettingsProps {
   onOrdersLoaded: (orders: any[]) => void;
+  onNavigateBack: () => void;
 }
 
-export const Settings: React.FC<SettingsProps> = ({ onOrdersLoaded }) => {
+export const Settings: React.FC<SettingsProps> = ({ onOrdersLoaded, onNavigateBack }) => {
   const [squareToken, setSquareToken] = useState(import.meta.env.VITE_SQUARE_ACCESS_TOKEN || '');
   const [locationId, setLocationId] = useState(import.meta.env.VITE_SQUARE_LOCATION_ID || '');
   const [environment, setEnvironment] = useState(import.meta.env.VITE_SQUARE_ENVIRONMENT || 'sandbox');
