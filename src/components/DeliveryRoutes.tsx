@@ -414,11 +414,15 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
 
       {/* Empty State */}
       {displayRoutes.length === 0 && (
-            )
-            }
         <div className="text-center py-8 text-gray-500">
           <div className="text-2xl mb-2">
             {showHistory ? '📦' : '🚚'}
           </div>
-  )
-}
+          <p className="text-sm">
+            {showHistory ? 'No archived routes' : 'No active routes'}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+};
