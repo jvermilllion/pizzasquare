@@ -265,7 +265,6 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
       orders.forEach((order, index) => {
         const info = routeInfo[order.id];
         const color = info.color;
-        const isRouteVisible = visibleRoutes.has(info.routeIndex);
         
         // Create numbered marker element
         const orderEl = document.createElement('div');
@@ -289,7 +288,6 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
             box-shadow: 0 6px 20px rgba(0,0,0,0.15), 0 2px 8px ${color}40;
             cursor: pointer;
             transition: all 0.3s ease;
-            opacity: ${isRouteVisible ? '1' : '0.3'};
           ">
             <div style="
               background: rgba(255,255,255,0.2);
@@ -375,16 +373,14 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
         markersRef.current.push(orderMarker);
 
         // Add route using Mapbox Directions API
-        if (isRouteVisible) {
-          fetchRoute(
-            [restaurantLocation.lng, restaurantLocation.lat],
-            [order.deliveryLocation.lng, order.deliveryLocation.lat],
-            color,
-            false,
-            false,
-            `route-${order.id}`
-          );
-        }
+        fetchRoute(
+          [restaurantLocation.lng, restaurantLocation.lat],
+          [order.deliveryLocation.lng, order.deliveryLocation.lat],
+          color,
+          false,
+          false,
+          `route-${order.id}`
+        );
       });
 
       // Add event listeners for map movement to update off-screen indicators
