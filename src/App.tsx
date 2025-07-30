@@ -51,6 +51,21 @@ function App() {
     });
   };
 
+  // Move order back to queue (unassign from route)
+  const handleMoveOrderToQueue = (orderId: string) => {
+    setOrders(prev => prev.map(order => 
+      order.id === orderId 
+        ? { 
+            ...order, 
+            status: 'ready' as const,
+            // Clear any route-specific properties if they exist
+            driverId: undefined,
+            groupId: undefined
+          }
+        : order
+    ));
+  };
+
   // Get active orders ready for delivery
   const activeOrders = useMemo(() => {
     return orders.filter(order => 
