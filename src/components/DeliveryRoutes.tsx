@@ -428,7 +428,7 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
       <div className="space-y-3">
         {displayRoutes.map((route, routeIndex) => {
           const isArchived = archivedRoutes.includes(route.id);
-          const isDropTarget = dragOverRoute === routeIndex;
+          const isDropTarget = dragOverTarget?.type === 'route' && dragOverTarget?.index === routeIndex;
           const isDragging = dragState.isDragging && dragState.routeId === route.id;
           
           return (
@@ -582,18 +582,18 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
       {draggedOrder && (
         <div 
           className={`mt-4 border-2 border-dashed rounded-lg p-4 text-center transition-all ${
-            dragOverRoute === -1 
+            dragOverTarget?.type === 'queue'
               ? 'border-green-400 bg-green-50' 
               : 'border-gray-300 bg-gray-50'
           }`}
           onDragOver={(e) => {
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
-            setDragOverRoute(-1);
+            setDragOverTarget({ type: 'queue' });
           }}
           onDragLeave={(e) => {
             if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-              setDragOverRoute(null);
+              setDragOverTarget(null);
             }
           }}
           onDrop={handleQueueDrop}
