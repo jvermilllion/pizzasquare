@@ -393,31 +393,31 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
                     </div>
                   </div>
                   <div className="flex items-center space-x-1">
+                    {!showHistory && !isArchived && (
+                      <button
+                        onClick={() => handleArchiveRoute(route.id)}
+                        className="text-gray-500 hover:text-red-600 p-1 transition-colors"
+                        title="Archive route"
+                      >
+                        <Archive className="w-5 h-5" />
+                      </button>
+                    )}
                     {!isArchived && (
                       <button
                         onClick={() => window.open(route.googleMapsUrl, '_blank')}
                         className="text-blue-600 hover:text-blue-700 p-1 text-sm"
                         title="Open in Google Maps"
                       >
-                        🗺️
-                      </button>
-                    )}
-                    {!showHistory && !isArchived && (
-                      <button
-                        onClick={() => handleArchiveRoute(route.id)}
-                        className="text-gray-500 hover:text-red-600 p-0.5 transition-colors"
-                        title="Archive route"
-                      >
-                        <Archive className="w-3 h-3" />
+                        <span className="text-lg">🗺️</span>
                       </button>
                     )}
                     {showHistory && (
                       <button
                         onClick={() => handleUnarchiveRoute(route.id)}
-                        className="text-green-600 hover:text-green-700 p-0.5 transition-colors"
+                        className="text-green-600 hover:text-green-700 p-1 transition-colors"
                         title="Restore route"
                       >
-                        <ArrowLeft className="w-3 h-3" />
+                        <ArrowLeft className="w-5 h-5" />
                       </button>
                     )}
                   </div>
