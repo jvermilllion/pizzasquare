@@ -25,6 +25,7 @@ interface DeliveryRoutesProps {
   onArchiveRoute?: (routeId: string) => void;
   onMoveOrderBetweenRoutes?: (orderId: string, fromRouteIndex: number, toRouteIndex: number) => void;
   onMoveOrderToQueue?: (orderId: string) => void;
+  onReorderWithinRoute?: (orderId: string, routeIndex: number, newPosition: number) => void;
 }
 
 interface RouteGroup {
@@ -185,7 +186,8 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
   onOrderSelect,
   onArchiveRoute,
   onMoveOrderBetweenRoutes,
-  onMoveOrderToQueue
+  onMoveOrderToQueue,
+  onReorderWithinRoute
 }) => {
   const [archivedRoutes, setArchivedRoutes] = useState<string[]>([]);
   const [showHistory, setShowHistory] = useState(false);
@@ -262,13 +264,17 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
     
     if (!draggedOrder || draggedOrder.fromQueue) return;
     
-    // Only handle reordering within the same route for now
     if (draggedOrder.routeIndex === routeIndex) {
-      console.log('Reorder within route', draggedOrder.order.id, 'to position', position);
-      // This would need to be implemented by the parent component
-      // onReorderWithinRoute?.(draggedOrder.order.id, routeIndex, position);
+      // Reordering within the same route
+      if (onReorderWithinRoute) {
+        onReorderWithinRoute(draggedOrder.order.id, routeIndex, position);
+      }
+    } else {
+      // Moving between different routes - use existing handler
+      if (onMoveOrderBetweenRoutes) {
+        onMoveOrderBetweenRoutes(draggedOrder.order.id, draggedOrder.routeIndex, routeIndex);
+      }
     }
-    setDragOverPosition(null);
   };
 
   const handleRouteDragOver = (e: React.DragEvent, targetRouteIndex: number) => {
