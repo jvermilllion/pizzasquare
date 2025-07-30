@@ -1,0 +1,31 @@
+{
+  "name": "delivery-dashboard",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@googlemaps/js-api-loader": "^1.16.10",
+    "@types/mapbox-gl": "^3.4.1",
+    "date-fns": "^4.1.0",
+    "lucide-react": "^0.532.0",
+    "mapbox-gl": "^3.13.0",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "squareup": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.1.8",
+    "@types/react-dom": "^19.1.6",
+    "@vitejs/plugin-react": "^4.7.0",
+    "autoprefixer": "^10.4.21",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.8.3",
+    "vite": "^7.0.6"
+  }
+}
