@@ -19,104 +19,11 @@ const ROUTE_COLORS = [
   '#6366f1', // indigo
 ];
 
-// Calculate distance between two points using Haversine formula
-function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 3959; // Earth's radius in miles
-  const dLat = (lat2 - lat1) * Math.PI / 180;
-  const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-    Math.sin(dLon/2) * Math.sin(dLon/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  return R * c;
-}
-
-// Group orders into routes using the same algorithm as DeliveryRoutes
-function groupOrdersIntoRoutes(orders: Order[]) {
-  if (orders.length === 0) return [];
-
-  const routes: Array<{
-    id: string;
-    orders: Order[];
-    color: string;
-  }> = [];
-  const unassignedOrders = [...orders];
-  let routeCounter = 1;
-
-  while (unassignedOrders.length > 0) {
-    const currentRoute: Order[] = [];
-    let currentLocation = restaurantLocation;
-    let totalTime = 0;
-
-    // Start with the first unassigned order
-    let nextOrderIndex = 0;
-    let nextOrder = unassignedOrders[nextOrderIndex];
-    
-    while (nextOrder && totalTime < 35) { // Leave 10 minutes buffer for 45min total
-      // Calculate distance to this order
-      const distanceToOrder = calculateDistance(
-        currentLocation.lat, currentLocation.lng,
-        nextOrder.deliveryLocation.lat, nextOrder.deliveryLocation.lng
-      );
-      
-      // Calculate return distance to restaurant
-      const returnDistance = calculateDistance(
-        nextOrder.deliveryLocation.lat, nextOrder.deliveryLocation.lng,
-        restaurantLocation.lat, restaurantLocation.lng
-      );
-      
-      // Estimate time for this addition (distance in miles * 2.5 minutes per mile + 3 minutes per stop)
-      const additionalTime = distanceToOrder * 2.5 + 3;
-      const newReturnTime = returnDistance * 2.5;
-      const projectedTotalTime = totalTime + additionalTime + newReturnTime;
-      
-      // If adding this order would exceed 45 minutes, stop
-      if (projectedTotalTime > 45 && currentRoute.length > 0) {
-        break;
-      }
-      
-      // Add this order to the route
-      currentRoute.push(nextOrder);
-      unassignedOrders.splice(nextOrderIndex, 1);
-      totalTime += additionalTime;
-      currentLocation = nextOrder.deliveryLocation;
-      
-      // Find the nearest remaining order for next iteration
-      if (unassignedOrders.length > 0) {
-        let nearestDistance = Infinity;
-        let nearestIndex = 0;
-        
-        unassignedOrders.forEach((order, index) => {
-          const distance = calculateDistance(
-            currentLocation.lat, currentLocation.lng,
-            order.deliveryLocation.lat, order.deliveryLocation.lng
-          );
-          if (distance < nearestDistance) {
-            nearestDistance = distance;
-            nearestIndex = index;
-          }
-        });
-        
-        nextOrderIndex = nearestIndex;
-        nextOrder = unassignedOrders[nearestIndex];
-      } else {
-        nextOrder = null;
-      }
-    }
-    
-    if (currentRoute.length > 0) {
-      routes.push({
-        id: `route_${routeCounter}`,
-        orders: currentRoute,
-        color: ROUTE_COLORS[(routeCounter - 1) % ROUTE_COLORS.length]
-      });
-      
-      routeCounter++;
-    }
-  }
-
-  return routes;
+// Get color for order based on its position in the list
+function getOrderColor(orderIndex: number): string {
+  // Group orders into routes of ~3 orders each for coloring
+  const routeIndex = Math.floor(orderIndex / 3);
+  return ROUTE_COLORS[routeIndex % ROUTE_COLORS.length];
 }
 
 // Set Mapbox access token
@@ -141,9 +48,6 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
   }>>([]);
   const [mapError, setMapError] = useState<string | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
-
-  // Group orders into routes
-  const routeGroups = groupOrdersIntoRoutes(orders);
 
   // Handle selected order changes - fly to order location
   useEffect(() => {
@@ -173,51 +77,47 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
       color: string;
     }> = [];
 
-    let globalIndex = 0;
-    routeGroups.forEach((routeGroup) => {
-      routeGroup.orders.forEach((order) => {
-        const orderLngLat = new mapboxgl.LngLat(order.deliveryLocation.lng, order.deliveryLocation.lat);
-        const isInBounds = bounds.contains(orderLngLat);
+    orders.forEach((order, index) => {
+      const orderLngLat = new mapboxgl.LngLat(order.deliveryLocation.lng, order.deliveryLocation.lat);
+      const isInBounds = bounds.contains(orderLngLat);
 
-        if (!isInBounds) {
-          // Project order location to screen coordinates
-          const orderPoint = map.current!.project(orderLngLat);
-          const mapCenter = { x: mapWidth / 2, y: mapHeight / 2 };
-          
-          // Calculate direction from map center to order
-          const dx = orderPoint.x - mapCenter.x;
-          const dy = orderPoint.y - mapCenter.y;
-          
-          // Determine which edge the indicator should appear on
-          const margin = 30;
-          let x, y, direction;
-          
-          // Calculate intersection with screen edges
-          const absX = Math.abs(dx);
-          const absY = Math.abs(dy);
-          
-          if (absX / mapWidth > absY / mapHeight) {
-            // Hit left or right edge
-            x = dx > 0 ? mapWidth - margin : margin;
-            y = Math.max(margin, Math.min(mapHeight - margin, mapCenter.y + (dy * (mapWidth / 2 - margin)) / absX));
-            direction = dx > 0 ? 'right' : 'left';
-          } else {
-            // Hit top or bottom edge
-            y = dy > 0 ? mapHeight - margin : margin;
-            x = Math.max(margin, Math.min(mapWidth - margin, mapCenter.x + (dx * (mapHeight / 2 - margin)) / absY));
-            direction = dy > 0 ? 'bottom' : 'top';
-          }
-
-          offscreen.push({
-            order,
-            position: { x, y },
-            direction,
-            index: globalIndex + 1,
-            color: routeGroup.color
-          });
+      if (!isInBounds) {
+        // Project order location to screen coordinates
+        const orderPoint = map.current!.project(orderLngLat);
+        const mapCenter = { x: mapWidth / 2, y: mapHeight / 2 };
+        
+        // Calculate direction from map center to order
+        const dx = orderPoint.x - mapCenter.x;
+        const dy = orderPoint.y - mapCenter.y;
+        
+        // Determine which edge the indicator should appear on
+        const margin = 30;
+        let x, y, direction;
+        
+        // Calculate intersection with screen edges
+        const absX = Math.abs(dx);
+        const absY = Math.abs(dy);
+        
+        if (absX / mapWidth > absY / mapHeight) {
+          // Hit left or right edge
+          x = dx > 0 ? mapWidth - margin : margin;
+          y = Math.max(margin, Math.min(mapHeight - margin, mapCenter.y + (dy * (mapWidth / 2 - margin)) / absX));
+          direction = dx > 0 ? 'right' : 'left';
+        } else {
+          // Hit top or bottom edge
+          y = dy > 0 ? mapHeight - margin : margin;
+          x = Math.max(margin, Math.min(mapWidth - margin, mapCenter.x + (dx * (mapHeight / 2 - margin)) / absY));
+          direction = dy > 0 ? 'bottom' : 'top';
         }
-        globalIndex++;
-      });
+
+        offscreen.push({
+          order,
+          position: { x, y },
+          direction,
+          index: index + 1,
+          color: getOrderColor(index)
+        });
+      }
     });
 
     setOffscreenOrders(offscreen);
@@ -305,128 +205,123 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
       markersRef.current.push(restaurantMarker);
 
       // Add order markers and routes
-      let globalOrderIndex = 0;
-      routeGroups.forEach((routeGroup) => {
-        routeGroup.orders.forEach((order, orderIndex) => {
-          const color = routeGroup.color;
+      orders.forEach((order, index) => {
+        const color = getOrderColor(index);
 
-          // Create numbered marker element
-          const orderEl = document.createElement('div');
-          const size = 30;
-          const fontSize = '12px';
-          
-          orderEl.innerHTML = `
+        // Create numbered marker element
+        const orderEl = document.createElement('div');
+        const size = 30;
+        const fontSize = '12px';
+        
+        orderEl.innerHTML = `
+          <div style="
+            position: relative;
+            background: linear-gradient(135deg, ${color} 0%, ${color}dd 100%);
+            border: 4px solid white;
+            border-radius: 50%;
+            width: ${size}px;
+            height: ${size}px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: ${fontSize};
+            color: white;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.15), 0 2px 8px ${color}40;
+            cursor: pointer;
+            transition: all 0.3s ease;
+          ">
             <div style="
-              position: relative;
-              background: linear-gradient(135deg, ${color} 0%, ${color}dd 100%);
-              border: 4px solid white;
+              background: rgba(255,255,255,0.2);
               border-radius: 50%;
-              width: ${size}px;
-              height: ${size}px;
+              width: ${size - 12}px;
+              height: ${size - 12}px;
               display: flex;
               align-items: center;
               justify-content: center;
               font-weight: bold;
-              font-size: ${fontSize};
-              color: white;
-              box-shadow: 0 6px 20px rgba(0,0,0,0.15), 0 2px 8px ${color}40;
-              cursor: pointer;
-              transition: all 0.3s ease;
-            ">
-              <div style="
-                background: rgba(255,255,255,0.2);
-                border-radius: 50%;
-                width: ${size - 12}px;
-                height: ${size - 12}px;
-                display: flex;
-                align-items: center;
-                justify-content: center;
-                font-weight: bold;
-              ">${globalOrderIndex + 1}</div>
-            </div>
-          `;
+            ">${index + 1}</div>
+          </div>
+        `;
 
-          const orderMarker = new mapboxgl.Marker({ element: orderEl })
-            .setLngLat([order.deliveryLocation.lng, order.deliveryLocation.lat]);
-          
-          orderMarker.getElement()
-            .addEventListener('click', () => {
-              onOrderSelect(order);
-            });
-          
-          const marker = new mapboxgl.Marker({ element: orderEl })
-            .setLngLat([order.deliveryLocation.lng, order.deliveryLocation.lat])
-            .setPopup(new mapboxgl.Popup({ 
-              offset: 30,
-              className: 'custom-popup'
-            }).setHTML(`
-              <div style="padding: 12px; max-width: 250px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
-                <div style="display: flex; align-items: center; margin-bottom: 8px;">
-                  <div style="
-                    width: 24px;
-                    height: 24px;
-                    background: ${color};
-                    border-radius: 50%;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    margin-right: 8px;
-                    font-weight: bold;
-                    color: white;
-                    font-size: 12px;
-                  ">${globalOrderIndex + 1}</div>
-                  <div>
-                    <div style="font-weight: 600; color: #1f2937; font-size: 14px;">Order #${order.squareOrderId.slice(-4)}</div>
-                  </div>
+        const orderMarker = new mapboxgl.Marker({ element: orderEl })
+          .setLngLat([order.deliveryLocation.lng, order.deliveryLocation.lat]);
+        
+        orderMarker.getElement()
+          .addEventListener('click', () => {
+            onOrderSelect(order);
+          });
+        
+        const marker = new mapboxgl.Marker({ element: orderEl })
+          .setLngLat([order.deliveryLocation.lng, order.deliveryLocation.lat])
+          .setPopup(new mapboxgl.Popup({ 
+            offset: 30,
+            className: 'custom-popup'
+          }).setHTML(`
+            <div style="padding: 12px; max-width: 250px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;">
+              <div style="display: flex; align-items: center; margin-bottom: 8px;">
+                <div style="
+                  width: 24px;
+                  height: 24px;
+                  background: ${color};
+                  border-radius: 50%;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  margin-right: 8px;
+                  font-weight: bold;
+                  color: white;
+                  font-size: 12px;
+                ">${index + 1}</div>
+                <div>
+                  <div style="font-weight: 600; color: #1f2937; font-size: 14px;">Order #${order.squareOrderId.slice(-4)}</div>
                 </div>
-                
-                <div style="margin-bottom: 8px;">
-                  <div style="font-weight: 600; color: #1f2937; font-size: 13px;">${order.customerName}</div>
-                  <div style="color: #10b981; font-weight: bold; font-size: 14px;">$${order.totalAmount.toFixed(2)}</div>
-                </div>
-                
-                <div style="font-size: 11px; color: #6b7280; line-height: 1.3; margin-bottom: 8px;">
-                  📍 ${order.deliveryAddress}
-                </div>
-                
-                <div style="font-size: 11px; color: #4b5563;">
-                  <div style="margin-bottom: 2px;"><strong>Items:</strong></div>
-                  ${order.items.slice(0, 2).map(item => `
-                    <div>${item.quantity}x ${item.name}</div>
-                  `).join('')}
-                  ${order.items.length > 2 ? `<div style="color: #6b7280;">+${order.items.length - 2} more items</div>` : ''}
-                </div>
-                
-                ${order.specialInstructions ? `
-                  <div style="
-                    background: #fef3c7;
-                    padding: 6px;
-                    border-radius: 4px;
-                    font-size: 10px;
-                    color: #92400e;
-                    margin-top: 8px;
-                  ">
-                    <strong>Instructions:</strong> ${order.specialInstructions}
-                  </div>
-                ` : ''}
               </div>
-            `))
-            .addTo(map.current);
+              
+              <div style="margin-bottom: 8px;">
+                <div style="font-weight: 600; color: #1f2937; font-size: 13px;">${order.customerName}</div>
+                <div style="color: #10b981; font-weight: bold; font-size: 14px;">$${order.totalAmount.toFixed(2)}</div>
+              </div>
+              
+              <div style="font-size: 11px; color: #6b7280; line-height: 1.3; margin-bottom: 8px;">
+                📍 ${order.deliveryAddress}
+              </div>
+              
+              <div style="font-size: 11px; color: #4b5563;">
+                <div style="margin-bottom: 2px;"><strong>Items:</strong></div>
+                ${order.items.slice(0, 2).map(item => `
+                  <div>${item.quantity}x ${item.name}</div>
+                `).join('')}
+                ${order.items.length > 2 ? `<div style="color: #6b7280;">+${order.items.length - 2} more items</div>` : ''}
+              </div>
+              
+              ${order.specialInstructions ? `
+                <div style="
+                  background: #fef3c7;
+                  padding: 6px;
+                  border-radius: 4px;
+                  font-size: 10px;
+                  color: #92400e;
+                  margin-top: 8px;
+                ">
+                  <strong>Instructions:</strong> ${order.specialInstructions}
+                </div>
+              ` : ''}
+            </div>
+          `))
+          .addTo(map.current);
 
-          markersRef.current.push(orderMarker);
+        markersRef.current.push(orderMarker);
 
-          // Add route using Mapbox Directions API
-          fetchRoute(
-            [restaurantLocation.lng, restaurantLocation.lat],
-            [order.deliveryLocation.lng, order.deliveryLocation.lat],
-            color,
-            false,
-            false,
-            `route-${order.id}`
-          );
-
-          globalOrderIndex++;
-        });
+        // Add route using Mapbox Directions API
+        fetchRoute(
+          [restaurantLocation.lng, restaurantLocation.lat],
+          [order.deliveryLocation.lng, order.deliveryLocation.lat],
+          color,
+          false,
+          false,
+          `route-${order.id}`
+        );
       });
 
       // Add event listeners for map movement to update off-screen indicators
