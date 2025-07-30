@@ -399,7 +399,7 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
           <div className="flex items-center space-x-2">
             <button
               onClick={() => setShowHistory(!showHistory)}
-              className={`p-1 rounded transition-colors ${
+              className={`p-1.5 rounded transition-colors ${
                 showHistory 
                   ? 'bg-gray-600 text-white' 
                   : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
@@ -441,7 +441,8 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
               transform: dragState.routeId === route.id ? `translateX(${dragState.offset}px)` : 'translateX(0)',
               transition: dragState.isDragging && dragState.routeId === route.id ? 'none' : 'transform 0.3s ease'
             }}
-            onDragOver={!isArchived ? handleRouteDragOver : undefined}
+            onDragOver={!isArchived ? (e) => handleRouteDragOver(e, routeIndex) : undefined}
+            onDragLeave={!isArchived ? handleRouteDragLeave : undefined}
             onDrop={!isArchived ? (e) => handleRouteDrop(e, routeIndex) : undefined}
             onTouchStart={(e) => !isArchived && handleTouchStart(e, route.id)}
             onTouchMove={handleTouchMove}
@@ -572,30 +573,9 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
         {/* Instructions for swipe/drag */}
         {!showHistory && activeRoutes.length > 0 && (
           <div className="text-center py-2 text-gray-500 text-xs">
-            💡 Swipe routes left to archive • Drag orders between routes or to queue to reorganize
+            💡 Swipe routes left to archive • Drag orders between routes to reorganize
           </div>
         )}
-
-        {/* Queue Drop Zone */}
-        <div 
-          className={`border-2 border-dashed rounded-lg p-4 text-center transition-all ${
-            dragOverTarget?.type === 'queue' 
-              ? 'border-green-400 bg-green-50' 
-              : draggedOrder && !draggedOrder.fromQueue
-              ? 'border-gray-300 bg-gray-50'
-              : 'hidden'
-          }`}
-          onDragOver={handleQueueDragOver}
-          onDragLeave={handleQueueDragLeave}
-          onDrop={handleQueueDrop}
-        >
-          <div className={`${dragOverTarget?.type === 'queue' ? 'text-green-600' : 'text-gray-600'}`}>
-            📦 <strong>Drop here to move order back to queue</strong>
-          </div>
-          <div className="text-xs text-gray-500 mt-1">
-            Order will be unassigned and available for reassignment
-          </div>
-        </div>
       </div>
     </div>
   );
