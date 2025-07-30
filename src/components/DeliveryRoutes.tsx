@@ -19,7 +19,6 @@ const ROUTE_COLORS = [
 
 interface DeliveryRoutesProps {
   orders: Order[];
-  selectedOrder: Order | null;
   onUpdateOrderStatus: (orderId: string, status: Order['status']) => void;
   onOrderSelect: (order: Order) => void;
   onArchiveRoute?: (routeId: string) => void;
@@ -180,7 +179,6 @@ function groupOrdersIntoRoutes(orders: Order[]): RouteGroup[] {
 
 export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({ 
   orders, 
-  selectedOrder,
   onUpdateOrderStatus, 
   onOrderSelect,
   onArchiveRoute,
