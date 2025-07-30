@@ -191,6 +191,7 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
   const [showHistory, setShowHistory] = useState(false);
   const [draggedOrder, setDraggedOrder] = useState<{ order: Order; routeIndex: number; fromQueue?: boolean } | null>(null);
   const [dragOverTarget, setDragOverTarget] = useState<{ type: 'route' | 'queue'; index?: number } | null>(null);
+  const [dragOverPosition, setDragOverPosition] = useState<{ routeIndex: number; position: number } | null>(null);
 
   const routeGroups = useMemo(() => groupOrdersIntoRoutes(orders), [orders]);
 
@@ -239,6 +240,34 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
     
     setDraggedOrder(null);
     setDragOverTarget(null);
+
+  // Handle reordering within the same route
+  const handlePositionDragOver = (e: React.DragEvent, routeIndex: number, position: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    
+    if (draggedOrder && !draggedOrder.fromQueue) {
+      setDragOverPosition({ routeIndex, position });
+      setDragOverTarget(null); // Clear route target when over specific position
+    }
+  };
+
+  const handlePositionDrop = (e: React.DragEvent, routeIndex: number, position: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragOverPosition(null);
+    setDragOverTarget(null);
+    
+    if (!draggedOrder || draggedOrder.fromQueue) return;
+    
+    // Only handle reordering within the same route for now
+    if (draggedOrder.routeIndex === routeIndex) {
+      console.log('Reorder within route', draggedOrder.order.id, 'to position', position);
+      // This would need to be implemented by the parent component
+      // onReorderWithinRoute?.(draggedOrder.order.id, routeIndex, position);
+    }
+  };
+    setDragOverPosition(null);
   };
 
   const handleRouteDragOver = (e: React.DragEvent, targetRouteIndex: number) => {
@@ -248,17 +277,14 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
     
     if (draggedOrder) {
       setDragOverTarget({ type: 'route', index: targetRouteIndex });
+      setDragOverPosition(null); // Clear position when over route container
     }
   };
 
   const handleRouteDragLeave = (e: React.DragEvent) => {
-    // Only clear if we're actually leaving the drop zone
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX;
-    const y = e.clientY;
-    
-    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
       setDragOverTarget(null);
+      setDragOverPosition(null);
     }
   };
 
@@ -266,6 +292,7 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
     e.preventDefault();
     e.stopPropagation();
     setDragOverTarget(null);
+    setDragOverPosition(null);
     
     if (!draggedOrder) return;
     
@@ -288,11 +315,7 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
   };
 
   const handleQueueDragLeave = (e: React.DragEvent) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX;
-    const y = e.clientY;
-    
-    if (x < rect.left || x > rect.right || y < rect.top || y > rect.bottom) {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
       setDragOverTarget(null);
     }
   };
@@ -424,66 +447,93 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
                 </div>
               </div>
 
-              {/* Drop Zone Indicator */}
-              {isDropTarget && draggedOrder && (
-                <div className="absolute inset-0 bg-blue-100 bg-opacity-95 border-2 border-dashed border-blue-400 rounded-lg flex items-center justify-center z-10 pointer-events-none">
-                  <div className="text-blue-700 font-bold text-center">
-                    <div className="text-lg mb-1">📦</div>
-                    <div>Drop order here</div>
-                    <div className="text-sm opacity-75">Move to {route.name}</div>
-                  </div>
+              {/* Route-level Drop Zone Indicator */}
+              {isDropTarget && draggedOrder && !dragOverPosition && (
+                <div className="bg-blue-100 border-2 border-dashed border-blue-400 rounded p-3 m-2 text-center text-blue-700">
+                  <div className="text-lg mb-1">📦</div>
+                  <div className="font-bold">Drop order here</div>
+                  <div className="text-sm opacity-75">Add to {route.name}</div>
                 </div>
               )}
 
               {/* Orders List */}
               <div className="p-2 space-y-1 max-h-64 overflow-y-auto">
                 {route.orders.map((order, orderIndex) => (
-                  <div
-                    key={order.id}
-                    className={`border border-gray-200 rounded p-2 cursor-pointer transition-all hover:shadow-sm ${
-                      selectedOrder === order.id ? 'ring-2 ring-blue-500' : ''
-                    } ${
-                      draggedOrder?.order.id === order.id ? 'opacity-30 transform scale-95' : ''
-                    }`}
-                    onClick={() => onOrderSelect(order)}
-                    draggable={!isArchived}
-                    onDragStart={!isArchived ? (e) => handleOrderDragStart(e, order, routeIndex) : undefined}
-                    onDragEnd={!isArchived ? handleOrderDragEnd : undefined}
-                    title={!isArchived ? "Drag to move between routes or back to queue" : ""}
-                    style={{
-                      cursor: !isArchived ? 'grab' : 'pointer',
-                      userSelect: 'none'
-                    }}
-                    onMouseDown={(e) => {
-                      if (!isArchived && e.currentTarget instanceof HTMLElement) {
-                        e.currentTarget.style.cursor = 'grabbing';
-                      }
-                    }}
-                    onMouseUp={(e) => {
-                      if (e.currentTarget instanceof HTMLElement) {
-                        e.currentTarget.style.cursor = !isArchived ? 'grab' : 'pointer';
-                      }
-                    }}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center">
-                        <div
-                          className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold text-xs mr-2 flex-shrink-0"
-                          style={{ backgroundColor: route.color }}
-                        >
-                          {orderIndex + 1}
+                  <React.Fragment key={order.id}>
+                    {/* Drop zone above each order for reordering */}
+                    {!isArchived && draggedOrder && !draggedOrder.fromQueue && (
+                      <div
+                        className={`h-2 transition-all ${
+                          dragOverPosition?.routeIndex === routeIndex && 
+                          dragOverPosition?.position === orderIndex
+                            ? 'bg-blue-200 border-2 border-dashed border-blue-400 rounded'
+                            : 'h-0'
+                        }`}
+                        onDragOver={(e) => handlePositionDragOver(e, routeIndex, orderIndex)}
+                        onDrop={(e) => handlePositionDrop(e, routeIndex, orderIndex)}
+                      />
+                    )}
+                    
+                    <div
+                      className={`border border-gray-200 rounded p-2 cursor-pointer transition-all hover:shadow-sm ${
+                        selectedOrder === order.id ? 'ring-2 ring-blue-500' : ''
+                      } ${
+                        draggedOrder?.order.id === order.id ? 'opacity-30 transform scale-95' : ''
+                      }`}
+                      onClick={() => onOrderSelect(order)}
+                      draggable={!isArchived}
+                      onDragStart={!isArchived ? (e) => handleOrderDragStart(e, order, routeIndex) : undefined}
+                      onDragEnd={!isArchived ? handleOrderDragEnd : undefined}
+                      title={!isArchived ? "Drag to move between routes or back to queue" : ""}
+                      style={{
+                        cursor: !isArchived ? 'grab' : 'pointer',
+                        userSelect: 'none'
+                      }}
+                      onMouseDown={(e) => {
+                        if (!isArchived && e.currentTarget instanceof HTMLElement) {
+                          e.currentTarget.style.cursor = 'grabbing';
+                        }
+                      }}
+                      onMouseUp={(e) => {
+                        if (e.currentTarget instanceof HTMLElement) {
+                          e.currentTarget.style.cursor = !isArchived ? 'grab' : 'pointer';
+                        }
+                      }}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center">
+                          <div
+                            className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold text-xs mr-2 flex-shrink-0"
+                            style={{ backgroundColor: route.color }}
+                          >
+                            {orderIndex + 1}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="text-sm font-medium text-gray-900 truncate">{order.customerName}</div>
+                            <div className="text-xs text-gray-500 truncate">{order.deliveryAddress}</div>
+                          </div>
                         </div>
-                        <div className="min-w-0 flex-1">
-                          <div className="text-sm font-medium text-gray-900 truncate">{order.customerName}</div>
-                          <div className="text-xs text-gray-500 truncate">{order.deliveryAddress}</div>
+                        <div className="text-right flex-shrink-0 ml-2">
+                          <div className="text-sm font-medium text-gray-900">${order.totalAmount.toFixed(2)}</div>
+                          <div className="text-xs text-gray-600 font-medium">{order.distance}</div>
                         </div>
-                      </div>
-                      <div className="text-right flex-shrink-0 ml-2">
-                        <div className="text-sm font-medium text-gray-900">${order.totalAmount.toFixed(2)}</div>
-                        <div className="text-xs text-gray-600 font-medium">{order.distance}</div>
                       </div>
                     </div>
-                  </div>
+                    
+                    {/* Drop zone after the last order */}
+                    {!isArchived && draggedOrder && !draggedOrder.fromQueue && orderIndex === route.orders.length - 1 && (
+                      <div
+                        className={`h-2 transition-all ${
+                          dragOverPosition?.routeIndex === routeIndex && 
+                          dragOverPosition?.position === route.orders.length
+                            ? 'bg-blue-200 border-2 border-dashed border-blue-400 rounded'
+                            : 'h-0'
+                        }`}
+                        onDragOver={(e) => handlePositionDragOver(e, routeIndex, route.orders.length)}
+                        onDrop={(e) => handlePositionDrop(e, routeIndex, route.orders.length)}
+                      />
+                    )}
+                  </React.Fragment>
                 ))}
               </div>
 
@@ -523,6 +573,13 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
           }`}>
             Order will be unassigned from route
           </div>
+          
+          {/* Show reordering hint when dragging within same route */}
+          {dragOverPosition && (
+            <div className="text-xs mt-2 text-blue-600">
+              💡 Reordering within {routeGroups[dragOverPosition.routeIndex]?.name} - position {dragOverPosition.position + 1}
+            </div>
+          )}
         </div>
       )}
     </div>
