@@ -137,6 +137,11 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
 
       if (!isInBounds) {
         const info = routeInfo[order.id];
+        const isRouteVisible = visibleRoutes.has(info.routeIndex);
+        
+        // Only show off-screen indicators for visible routes
+        if (!isRouteVisible) return;
+        
         // Project order location to screen coordinates
         const orderPoint = map.current!.project(orderLngLat);
         const mapCenter = { x: mapWidth / 2, y: mapHeight / 2 };
@@ -164,7 +169,7 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
           x = Math.max(margin, Math.min(mapWidth - margin, mapCenter.x + (dx * (mapHeight / 2 - margin)) / absY));
           direction = dy > 0 ? 'bottom' : 'top';
         }
-
+        
         offscreen.push({
           order,
           position: { x, y },
@@ -265,9 +270,6 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
         const color = info.color;
         const isRouteVisible = visibleRoutes.has(info.routeIndex);
         
-        // Only show off-screen indicators for visible routes
-        if (!isRouteVisible) return;
-
         // Create numbered marker element
         const orderEl = document.createElement('div');
         const size = 30;
@@ -515,6 +517,54 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
           </div>
         </div>
       )}
+
+      {/* Route Toggle Controls */}
+      <div className="absolute top-4 right-4 z-20 bg-white rounded-lg shadow-lg p-4 max-w-xs">
+        <div className="flex items-center justify-between mb-3">
+          <h3 className="font-bold text-gray-900 text-sm">Route Visibility</h3>
+          <button
+            onClick={toggleAllRoutes}
+            className="text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded transition-colors"
+          >
+            {visibleRoutes.size === uniqueRoutes.length ? 'Hide All' : 'Show All'}
+          </button>
+        </div>
+        <div className="space-y-2 max-h-48 overflow-y-auto">
+          {uniqueRoutes.map(route => (
+            <div key={route.index} className="flex items-center">
+              <button
+                onClick={() => toggleRoute(route.index)}
+                className={`flex items-center w-full p-2 rounded text-sm transition-all ${
+                  visibleRoutes.has(route.index)
+                    ? 'bg-gray-50 hover:bg-gray-100'
+                    : 'bg-gray-200 opacity-60 hover:bg-gray-300'
+                }`}
+              >
+                <div
+                  className="w-4 h-4 rounded-full mr-2 flex-shrink-0"
+                  style={{ backgroundColor: route.color }}
+                />
+                <div className="flex-1 text-left">
+                  <div className="font-medium">Route {route.index + 1}</div>
+                  <div className="text-xs text-gray-600">{route.orderCount} stops</div>
+                </div>
+                <div className="ml-2">
+                  {visibleRoutes.has(route.index) ? (
+                    <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
+                      <div className="w-2 h-2 bg-white rounded-full" />
+                    </div>
+                  ) : (
+                    <div className="w-4 h-4 border-2 border-gray-400 rounded-full" />
+                  )}
+                </div>
+              </button>
+            </div>
+          ))}
+        </div>
+        <div className="mt-3 pt-3 border-t border-gray-200 text-xs text-gray-500">
+          💡 Click routes to show/hide on map
+        </div>
+      </div>
 
       {/* Off-screen order indicators */}
       {offscreenOrders.map(({ order, position, direction, routeNumber, color }) => {
