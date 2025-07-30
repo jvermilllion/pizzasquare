@@ -163,16 +163,14 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
           y = dy > 0 ? mapHeight - margin : margin;
           x = Math.max(margin, Math.min(mapWidth - margin, mapCenter.x + (dx * (mapHeight / 2 - margin)) / absY));
           direction = dy > 0 ? 'bottom' : 'top';
-          if (isRouteVisible) {
-            fetchRoute(
-              [restaurantLocation.lng, restaurantLocation.lat],
-              [order.deliveryLocation.lng, order.deliveryLocation.lat],
-              color,
-              false,
-              false,
-              `route-${order.id}`
-            );
-          }
+        }
+
+        offscreen.push({
+          order,
+          position: { x, y },
+          direction,
+          routeNumber: info.positionInRoute.toString(),
+          color: info.color
         });
       }
     });
@@ -266,9 +264,6 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
         const info = routeInfo[order.id];
         const color = info.color;
         const isRouteVisible = visibleRoutes.has(info.routeIndex);
-        
-        // Only show off-screen indicators for visible routes
-        if (!isRouteVisible) return;
 
         // Create numbered marker element
         const orderEl = document.createElement('div');
@@ -284,7 +279,6 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
             width: ${size}px;
             height: ${size}px;
             display: flex;
-          const isRouteVisible = visibleRoutes.has(info.routeIndex);
             align-items: center;
             justify-content: center;
             font-weight: bold;
@@ -293,6 +287,7 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
             box-shadow: 0 6px 20px rgba(0,0,0,0.15), 0 2px 8px ${color}40;
             cursor: pointer;
             transition: all 0.3s ease;
+            opacity: ${isRouteVisible ? '1' : '0.3'};
           ">
             <div style="
               background: rgba(255,255,255,0.2);
@@ -308,7 +303,6 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
         `;
 
         const orderMarker = new mapboxgl.Marker({ element: orderEl })
-              opacity: ${isRouteVisible ? '1' : '0.3'};
           .setLngLat([order.deliveryLocation.lng, order.deliveryLocation.lat]);
         
         orderMarker.getElement()
@@ -379,14 +373,16 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
         markersRef.current.push(orderMarker);
 
         // Add route using Mapbox Directions API
-        fetchRoute(
-          [restaurantLocation.lng, restaurantLocation.lat],
-          [order.deliveryLocation.lng, order.deliveryLocation.lat],
-          color,
-          false,
-          false,
-          `route-${order.id}`
-        );
+        if (isRouteVisible) {
+          fetchRoute(
+            [restaurantLocation.lng, restaurantLocation.lat],
+            [order.deliveryLocation.lng, order.deliveryLocation.lat],
+            color,
+            false,
+            false,
+            `route-${order.id}`
+          );
+        }
       });
 
       // Add event listeners for map movement to update off-screen indicators
@@ -404,26 +400,6 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
       }
     };
   }, [orders]);
-
-  // Update marker and route visibility when routes are toggled
-  useEffect(() => {
-    if (!map.current || !mapLoaded) return;
-
-    // Update marker opacity and route visibility
-    orders.forEach((order) => {
-      const info = routeInfo[order.id];
-      const isRouteVisible = visibleRoutes.has(info.routeIndex);
-      const routeId = `route-${order.id}`;
-
-      // Update route visibility
-      if (map.current!.getLayer(routeId)) {
-        map.current!.setLayoutProperty(routeId, 'visibility', isRouteVisible ? 'visible' : 'none');
-      }
-    });
-
-    // Update off-screen indicators
-    updateOffscreenOrders();
-  }, [visibleRoutes, mapLoaded]);
 
   const fetchRoute = async (
     start: [number, number],
@@ -516,54 +492,6 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
           </div>
         </div>
       )}
-
-      {/* Route Toggle Controls */}
-      <div className="absolute top-4 right-4 z-20 bg-white rounded-lg shadow-lg p-4 max-w-xs">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-bold text-gray-900 text-sm">Route Visibility</h3>
-          <button
-            onClick={toggleAllRoutes}
-            className="text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded transition-colors"
-          >
-            {visibleRoutes.size === uniqueRoutes.length ? 'Hide All' : 'Show All'}
-          </button>
-        </div>
-        <div className="space-y-2 max-h-48 overflow-y-auto">
-          {uniqueRoutes.map(route => (
-            <div key={route.index} className="flex items-center">
-              <button
-                onClick={() => toggleRoute(route.index)}
-                className={`flex items-center w-full p-2 rounded text-sm transition-all ${
-                  visibleRoutes.has(route.index)
-                    ? 'bg-gray-50 hover:bg-gray-100'
-                    : 'bg-gray-200 opacity-60 hover:bg-gray-300'
-                }`}
-              >
-                <div
-                  className="w-4 h-4 rounded-full mr-2 flex-shrink-0"
-                  style={{ backgroundColor: route.color }}
-                />
-                <div className="flex-1 text-left">
-                  <div className="font-medium">Route {route.index + 1}</div>
-                  <div className="text-xs text-gray-600">{route.orderCount} stops</div>
-                </div>
-                <div className="ml-2">
-                  {visibleRoutes.has(route.index) ? (
-                    <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
-                      <div className="w-2 h-2 bg-white rounded-full" />
-                    </div>
-                  ) : (
-                    <div className="w-4 h-4 border-2 border-gray-400 rounded-full" />
-                  )}
-                </div>
-              </button>
-            </div>
-          ))}
-        </div>
-        <div className="mt-3 pt-3 border-t border-gray-200 text-xs text-gray-500">
-          💡 Click routes to show/hide on map
-        </div>
-      </div>
 
       {/* Off-screen order indicators */}
       {offscreenOrders.map(({ order, position, direction, routeNumber, color }) => {
