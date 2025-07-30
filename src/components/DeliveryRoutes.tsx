@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { Archive, ArrowLeft } from 'lucide-react';
+import { Archive, ArrowLeft, History } from 'lucide-react';
 import { Order } from '../types/orders';
 import { restaurantLocation } from '../data/realData';
 
