@@ -264,6 +264,9 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
         const info = routeInfo[order.id];
         const color = info.color;
         const isRouteVisible = visibleRoutes.has(info.routeIndex);
+        
+        // Only show off-screen indicators for visible routes
+        if (!isRouteVisible) return;
 
         // Create numbered marker element
         const orderEl = document.createElement('div');
