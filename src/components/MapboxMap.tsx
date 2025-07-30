@@ -70,47 +70,51 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
       color: string;
     }> = [];
 
-    orders.forEach((order, index) => {
-      const orderLngLat = new mapboxgl.LngLat(order.deliveryLocation.lng, order.deliveryLocation.lat);
-      const isInBounds = bounds.contains(orderLngLat);
+    let globalIndex = 0;
+    routeGroups.forEach((routeGroup) => {
+      routeGroup.orders.forEach((order) => {
+        const orderLngLat = new mapboxgl.LngLat(order.deliveryLocation.lng, order.deliveryLocation.lat);
+        const isInBounds = bounds.contains(orderLngLat);
 
-      if (!isInBounds) {
-        // Project order location to screen coordinates
-        const orderPoint = map.current!.project(orderLngLat);
-        const mapCenter = { x: mapWidth / 2, y: mapHeight / 2 };
-        
-        // Calculate direction from map center to order
-        const dx = orderPoint.x - mapCenter.x;
-        const dy = orderPoint.y - mapCenter.y;
-        
-        // Determine which edge the indicator should appear on
-        const margin = 30;
-        let x, y, direction;
-        
-        // Calculate intersection with screen edges
-        const absX = Math.abs(dx);
-        const absY = Math.abs(dy);
-        
-        if (absX / mapWidth > absY / mapHeight) {
-          // Hit left or right edge
-          x = dx > 0 ? mapWidth - margin : margin;
-          y = Math.max(margin, Math.min(mapHeight - margin, mapCenter.y + (dy * (mapWidth / 2 - margin)) / absX));
-          direction = dx > 0 ? 'right' : 'left';
-        } else {
-          // Hit top or bottom edge
-          y = dy > 0 ? mapHeight - margin : margin;
-          x = Math.max(margin, Math.min(mapWidth - margin, mapCenter.x + (dx * (mapHeight / 2 - margin)) / absY));
-          direction = dy > 0 ? 'bottom' : 'top';
+        if (!isInBounds) {
+          // Project order location to screen coordinates
+          const orderPoint = map.current!.project(orderLngLat);
+          const mapCenter = { x: mapWidth / 2, y: mapHeight / 2 };
+          
+          // Calculate direction from map center to order
+          const dx = orderPoint.x - mapCenter.x;
+          const dy = orderPoint.y - mapCenter.y;
+          
+          // Determine which edge the indicator should appear on
+          const margin = 30;
+          let x, y, direction;
+          
+          // Calculate intersection with screen edges
+          const absX = Math.abs(dx);
+          const absY = Math.abs(dy);
+          
+          if (absX / mapWidth > absY / mapHeight) {
+            // Hit left or right edge
+            x = dx > 0 ? mapWidth - margin : margin;
+            y = Math.max(margin, Math.min(mapHeight - margin, mapCenter.y + (dy * (mapWidth / 2 - margin)) / absX));
+            direction = dx > 0 ? 'right' : 'left';
+          } else {
+            // Hit top or bottom edge
+            y = dy > 0 ? mapHeight - margin : margin;
+            x = Math.max(margin, Math.min(mapWidth - margin, mapCenter.x + (dx * (mapHeight / 2 - margin)) / absY));
+            direction = dy > 0 ? 'bottom' : 'top';
+          }
+
+          offscreen.push({
+            order,
+            position: { x, y },
+            direction,
+            index: globalIndex + 1,
+            color: routeGroup.color
+          });
         }
-
-        offscreen.push({
-          order,
-          position: { x, y },
-          direction,
-          index: index + 1,
-          color: ROUTE_COLORS[index % ROUTE_COLORS.length]
-        });
-      }
+        globalIndex++;
+      });
     });
 
     setOffscreenOrders(offscreen);
