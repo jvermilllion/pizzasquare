@@ -136,9 +136,17 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
 }) => {
   const [archivedRoutes, setArchivedRoutes] = useState<string[]>([]);
   const [showHistory, setShowHistory] = useState(false);
-  const [draggedRoute, setDraggedRoute] = useState<string | null>(null);
-  const [dragOffset, setDragOffset] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
+  const [dragState, setDragState] = useState<{
+    routeId: string | null;
+    offset: number;
+    isDragging: boolean;
+    startX: number;
+  }>({
+    routeId: null,
+    offset: 0,
+    isDragging: false,
+    startX: 0
+  });
 
   const routeGroups = useMemo(() => groupOrdersIntoRoutes(orders), [orders]);
 
@@ -154,64 +162,80 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
   };
 
   const handleTouchStart = (e: React.TouchEvent, routeId: string) => {
-    setDraggedRoute(routeId);
-    setIsDragging(true);
-    setDragOffset(0);
+    const touch = e.touches[0];
+    setDragState({
+      routeId,
+      offset: 0,
+      isDragging: true,
+      startX: touch.clientX
+    });
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isDragging || !draggedRoute) return;
+    if (!dragState.isDragging || !dragState.routeId) return;
     
     const touch = e.touches[0];
-    const startX = e.currentTarget.getBoundingClientRect().left;
-    const currentX = touch.clientX;
-    const offset = currentX - startX - 200; // Adjust for natural starting position
+    const offset = touch.clientX - dragState.startX;
     
     // Only allow left swipe (negative offset)
     if (offset < 0) {
-      setDragOffset(Math.max(offset, -150)); // Limit swipe distance
+      setDragState(prev => ({
+        ...prev,
+        offset: Math.max(offset, -150)
+      }));
     }
   };
 
   const handleTouchEnd = () => {
-    if (!isDragging || !draggedRoute) return;
+    if (!dragState.isDragging || !dragState.routeId) return;
     
     // If swiped far enough left, archive the route
-    if (dragOffset < -80) {
-      handleArchiveRoute(draggedRoute);
+    if (dragState.offset < -80) {
+      handleArchiveRoute(dragState.routeId);
     }
     
     // Reset drag state
-    setDraggedRoute(null);
-    setDragOffset(0);
-    setIsDragging(false);
+    setDragState({
+      routeId: null,
+      offset: 0,
+      isDragging: false,
+      startX: 0
+    });
   };
 
   const handleMouseDown = (e: React.MouseEvent, routeId: string) => {
-    setDraggedRoute(routeId);
-    setIsDragging(true);
-    setDragOffset(0);
-    
     const startX = e.clientX;
+    setDragState({
+      routeId,
+      offset: 0,
+      isDragging: true,
+      startX
+    });
     
     const handleMouseMove = (e: MouseEvent) => {
       const offset = e.clientX - startX;
       // Only allow left drag (negative offset)
       if (offset < 0) {
-        setDragOffset(Math.max(offset, -150));
+        setDragState(prev => ({
+          ...prev,
+          offset: Math.max(offset, -150)
+        }));
       }
     };
     
     const handleMouseUp = () => {
       // If dragged far enough left, archive the route
-      if (dragOffset < -80) {
-        handleArchiveRoute(routeId);
+      if (dragState.offset < -80) {
+        handleArchiveRoute(dragState.routeId!);
       }
       
       // Reset drag state
-      setDraggedRoute(null);
-      setDragOffset(0);
-      setIsDragging(false);
+      setDragState({
+        routeId: null,
+        offset: 0,
+        isDragging: false,
+        startX: 0
+      });
       
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
@@ -284,8 +308,8 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
             key={route.id} 
             className="bg-white border border-gray-200 rounded relative overflow-hidden"
             style={{
-              transform: draggedRoute === route.id ? `translateX(${dragOffset}px)` : 'translateX(0)',
-              transition: isDragging && draggedRoute === route.id ? 'none' : 'transform 0.3s ease'
+              transform: dragState.routeId === route.id ? `translateX(${dragState.offset}px)` : 'translateX(0)',
+              transition: dragState.isDragging && dragState.routeId === route.id ? 'none' : 'transform 0.3s ease'
             }}
             onTouchStart={(e) => !isArchived && handleTouchStart(e, route.id)}
             onTouchMove={handleTouchMove}
@@ -293,14 +317,14 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
             onMouseDown={(e) => !isArchived && handleMouseDown(e, route.id)}
           >
             {/* Archive indicator that appears when dragging */}
-            {draggedRoute === route.id && dragOffset < -40 && (
+            {dragState.routeId === route.id && dragState.offset < -40 && (
               <div className="absolute right-4 top-1/2 transform -translate-y-1/2 z-10">
                 <div className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-all ${
-                  dragOffset < -80 ? 'bg-red-500 text-white' : 'bg-red-100 text-red-600'
+                  dragState.offset < -80 ? 'bg-red-500 text-white' : 'bg-red-100 text-red-600'
                 }`}>
                   <Archive className="w-5 h-5" />
                   <span className="font-medium text-sm">
-                    {dragOffset < -80 ? 'Release to Archive' : 'Keep Dragging'}
+                    {dragState.offset < -80 ? 'Release to Archive' : 'Keep Dragging'}
                   </span>
                 </div>
               </div>
