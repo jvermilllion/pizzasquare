@@ -81,7 +81,10 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-100 relative">
       {currentView === 'settings' ? (
-        <Settings onOrdersLoaded={handleSquareOrdersLoaded} />
+        <Settings 
+          onOrdersLoaded={handleSquareOrdersLoaded} 
+          onNavigateBack={() => setCurrentView('dashboard')}
+        />
       ) : (
         <>
           {/* Sidebar */}

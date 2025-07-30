@@ -37,6 +37,17 @@ export const Settings: React.FC<SettingsProps> = ({ onOrdersLoaded }) => {
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
       <div className="max-w-4xl mx-auto">
+        {/* Back Navigation */}
+        <div className="mb-4">
+          <button
+            onClick={onNavigateBack}
+            className="flex items-center text-blue-600 hover:text-blue-700 font-medium transition-colors"
+          >
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            Back to Dashboard
+          </button>
+        </div>
+
         <div className="mb-6">
           <h1 className="text-3xl font-bold text-gray-900 mb-2 flex items-center">
             <SettingsIcon className="w-8 h-8 mr-3 text-blue-600" />
