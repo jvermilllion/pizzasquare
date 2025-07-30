@@ -130,7 +130,7 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
           order,
           position: { x, y },
           direction,
-          routeNumber: `${info.routeIndex + 1}.${info.positionInRoute}`,
+          routeNumber: `${info.positionInRoute}`,
           color: info.color
         });
       }
@@ -514,7 +514,7 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
             <div className={`absolute ${
               direction === 'top' ? 'top-full mt-2' : 'bottom-full mb-2'
             } left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap pointer-events-none shadow-lg`}>
-              <div className="font-semibold">Route {routeNumber}: {order.customerName}</div>
+              <div className="font-semibold">Stop {routeNumber}: {order.customerName}</div>
               <div className="text-gray-300">${order.totalAmount.toFixed(2)}</div>
               <div className={`absolute ${
                 direction === 'top' ? 'bottom-full' : 'top-full'
