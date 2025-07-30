@@ -421,7 +421,7 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
                     onDragEnd={!isArchived ? handleOrderDragEnd : undefined}
                     title={!isArchived ? "Drag to move to another route or back to queue" : ""}
                   >
-                    <div className="flex items-center justify-between mb-2">
+                    <div className="flex items-center justify-between">
                       <div className="flex items-center">
                         <div
                           className="w-6 h-6 rounded-full flex items-center justify-center text-white font-bold text-xs mr-3"
@@ -431,31 +431,12 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
                         </div>
                         <div>
                           <div className="font-medium text-sm">{order.customerName}</div>
-                          <div className="text-xs text-gray-500">#{order.squareOrderId.slice(-4)}</div>
+                          <div className="text-xs text-gray-600 truncate">{order.deliveryAddress}</div>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="font-bold text-green-600 text-sm">
-                          ${order.totalAmount.toFixed(2)}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {order.distance} • {order.deliveryTime}
-                        </div>
+                        <div className="text-xs text-gray-500">{order.distance}</div>
                       </div>
-                    </div>
-                    
-                    <div className="text-xs text-gray-600 mb-2 truncate">
-                      📍 {order.deliveryAddress}
-                    </div>
-                    
-                    {order.specialInstructions && (
-                      <div className="bg-yellow-50 border border-yellow-200 p-2 rounded text-xs text-yellow-700 mb-2">
-                        💡 {order.specialInstructions}
-                      </div>
-                    )}
-                    
-                    <div className="text-xs text-gray-500">
-                      Items: {order.items.map(item => `${item.quantity}x ${item.name}`).join(', ')}
                     </div>
                   </div>
                 ))}
