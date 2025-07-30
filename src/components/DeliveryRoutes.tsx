@@ -389,7 +389,7 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
                   {routeIndex + 1}
                 </div>
                 <span className="font-medium text-sm">
-                  {route.orders.length} stops
+                  {route.orders.length} stops • {route.estimatedTime}min
                   {isArchived && <span className="ml-2 text-xs opacity-75">(Archived)</span>}
                 </span>
               </div>
