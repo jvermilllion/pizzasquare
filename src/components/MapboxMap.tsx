@@ -218,9 +218,6 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
     map.current.on('load', () => {
       setMapLoaded(true);
       
-      // Set night preset configuration
-      map.current!.setConfigProperty('basemap', 'lightPreset', 'night');
-      
       updateOffscreenOrders();
       
       // Add restaurant marker
