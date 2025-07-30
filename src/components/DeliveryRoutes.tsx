@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { useEffect } from 'react';
 import { Archive, ArrowLeft, History } from 'lucide-react';
 import { Order } from '../types/orders';
 import { restaurantLocation } from '../data/realData';
@@ -195,7 +196,23 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
   const [dragOverTarget, setDragOverTarget] = useState<{ type: 'route' | 'queue'; index?: number } | null>(null);
   const [dragOverPosition, setDragOverPosition] = useState<{ routeIndex: number; position: number } | null>(null);
 
+  // Force re-render when orders change
+  const [lastUpdateTime, setLastUpdateTime] = useState(Date.now());
+  
+  useEffect(() => {
+    setLastUpdateTime(Date.now());
+  }, [orders]);
+
   const routeGroups = useMemo(() => groupOrdersIntoRoutes(orders), [orders]);
+  
+  // Update archived routes when orders change to prevent stale data
+  useEffect(() => {
+    // Remove archived routes that no longer have valid orders
+    setArchivedRoutes(prev => {
+      const validRouteIds = routeGroups.map(route => route.id);
+      return prev.filter(routeId => validRouteIds.includes(routeId));
+    });
+  }, [routeGroups]);
 
   const handleArchiveRoute = (routeId: string) => {
     setArchivedRoutes(prev => [...prev, routeId]);

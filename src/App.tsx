@@ -34,6 +34,9 @@ function App() {
           }
         : order
     ));
+    
+    // Force component re-render by updating a timestamp
+    setOrders(prev => [...prev]);
   };
 
   // Move order between routes
@@ -48,7 +51,8 @@ function App() {
       // For now, we'll just update the order to indicate it should be in a different route
       // The actual route grouping logic in DeliveryRoutes.tsx will handle the reorganization
       
-      return updatedOrders;
+      // Force re-render by creating new array reference
+      return [...updatedOrders];
     });
   };
 
@@ -65,16 +69,35 @@ function App() {
           }
         : order
     ));
+    
+    // Force component re-render
+    setOrders(prev => [...prev]);
   };
 
   // Handle reordering within a route
   const handleReorderWithinRoute = (orderId: string, routeIndex: number, newPosition: number) => {
-    // For now, log the reordering action
-    // In a full implementation, this would update the order positions within the route
-    console.log('Reordering within route:', { orderId, routeIndex, newPosition });
+    setOrders(prev => {
+      const updatedOrders = [...prev];
+      const orderIndex = updatedOrders.findIndex(o => o.id === orderId);
+      
+      if (orderIndex === -1) return prev;
+      
+      // For route-based reordering, we'll add a sortOrder property
+      const updatedOrder = {
+        ...updatedOrders[orderIndex],
+        sortOrder: newPosition,
+        lastUpdated: new Date().toISOString()
+      };
+      
+      updatedOrders[orderIndex] = updatedOrder;
+      
+      console.log('Reordering within route:', { orderId, routeIndex, newPosition });
+      
+      return updatedOrders;
+    });
     
-    // TODO: Implement actual reordering logic when route persistence is added
-    // This would involve updating order positions or route-specific ordering metadata
+    // Force component re-render
+    setOrders(prev => [...prev]);
   };
 
   // Get active orders ready for delivery
