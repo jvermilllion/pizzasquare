@@ -401,6 +401,26 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
     };
   }, [orders]);
 
+  // Update marker and route visibility when routes are toggled
+  useEffect(() => {
+    if (!map.current || !mapLoaded) return;
+
+    // Update marker opacity and route visibility
+    orders.forEach((order) => {
+      const info = routeInfo[order.id];
+      const isRouteVisible = visibleRoutes.has(info.routeIndex);
+      const routeId = `route-${order.id}`;
+
+      // Update route visibility
+      if (map.current!.getLayer(routeId)) {
+        map.current!.setLayoutProperty(routeId, 'visibility', isRouteVisible ? 'visible' : 'none');
+      }
+    });
+
+    // Update off-screen indicators
+    updateOffscreenOrders();
+  }, [visibleRoutes, mapLoaded]);
+
   const fetchRoute = async (
     start: [number, number],
     end: [number, number],
