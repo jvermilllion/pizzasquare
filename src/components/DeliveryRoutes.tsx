@@ -240,6 +240,8 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
     
     setDraggedOrder(null);
     setDragOverTarget(null);
+    setDragOverPosition(null);
+  };
 
   // Handle reordering within the same route
   const handlePositionDragOver = (e: React.DragEvent, routeIndex: number, position: number) => {
@@ -266,7 +268,6 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
       // This would need to be implemented by the parent component
       // onReorderWithinRoute?.(draggedOrder.order.id, routeIndex, position);
     }
-  };
     setDragOverPosition(null);
   };
 
