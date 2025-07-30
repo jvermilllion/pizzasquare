@@ -100,6 +100,7 @@ function App() {
         <div className="p-4">
           <DeliveryRoutes 
             orders={activeOrders}
+            selectedOrder={selectedOrder}
             onUpdateOrderStatus={handleUpdateOrderStatus}
             onOrderSelect={setSelectedOrder}
             onMoveOrderBetweenRoutes={handleMoveOrderBetweenRoutes}
