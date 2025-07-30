@@ -19,11 +19,24 @@ const ROUTE_COLORS = [
   '#6366f1', // indigo
 ];
 
-// Get color for order based on its position in the list
-function getOrderColor(orderIndex: number): string {
-  // Group orders into routes of ~3 orders each for coloring
-  const routeIndex = Math.floor(orderIndex / 3);
-  return ROUTE_COLORS[routeIndex % ROUTE_COLORS.length];
+// Group orders into routes and get color/position info
+function getOrderRouteInfo(orders: Order[]) {
+  const routeInfo: { [orderId: string]: { routeIndex: number; positionInRoute: number; color: string } } = {};
+  
+  // Group orders into routes of ~3 orders each
+  orders.forEach((order, globalIndex) => {
+    const routeIndex = Math.floor(globalIndex / 3);
+    const positionInRoute = (globalIndex % 3) + 1; // 1, 2, 3 within each route
+    const color = ROUTE_COLORS[routeIndex % ROUTE_COLORS.length];
+    
+    routeInfo[order.id] = {
+      routeIndex,
+      positionInRoute,
+      color
+    };
+  });
+  
+  return routeInfo;
 }
 
 // Set Mapbox access token
@@ -43,12 +56,14 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
     order: Order;
     position: { x: number; y: number };
     direction: string;
-    index: number;
+    routeNumber: string;
     color: string;
   }>>([]);
   const [mapError, setMapError] = useState<string | null>(null);
   const markersRef = useRef<mapboxgl.Marker[]>([]);
 
+  // Get route information for all orders
+  const routeInfo = getOrderRouteInfo(orders);
   // Handle selected order changes - fly to order location
   useEffect(() => {
     if (selectedOrder && map.current && mapLoaded) {
@@ -73,7 +88,7 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
       order: Order;
       position: { x: number; y: number };
       direction: string;
-      index: number;
+      routeNumber: string;
       color: string;
     }> = [];
 
@@ -82,6 +97,7 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
       const isInBounds = bounds.contains(orderLngLat);
 
       if (!isInBounds) {
+        const info = routeInfo[order.id];
         // Project order location to screen coordinates
         const orderPoint = map.current!.project(orderLngLat);
         const mapCenter = { x: mapWidth / 2, y: mapHeight / 2 };
@@ -114,8 +130,8 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
           order,
           position: { x, y },
           direction,
-          index: index + 1,
-          color: getOrderColor(index)
+          routeNumber: `${info.routeIndex + 1}.${info.positionInRoute}`,
+          color: info.color
         });
       }
     });
@@ -206,7 +222,8 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
 
       // Add order markers and routes
       orders.forEach((order, index) => {
-        const color = getOrderColor(index);
+        const info = routeInfo[order.id];
+        const color = info.color;
 
         // Create numbered marker element
         const orderEl = document.createElement('div');
@@ -240,7 +257,7 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
               align-items: center;
               justify-content: center;
               font-weight: bold;
-            ">${index + 1}</div>
+            ">${info.positionInRoute}</div>
           </div>
         `;
 
@@ -272,9 +289,10 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
                   font-weight: bold;
                   color: white;
                   font-size: 12px;
-                ">${index + 1}</div>
+                ">${info.positionInRoute}</div>
                 <div>
-                  <div style="font-weight: 600; color: #1f2937; font-size: 14px;">Order #${order.squareOrderId.slice(-4)}</div>
+                  <div style="font-weight: 600; color: #1f2937; font-size: 14px;">Route ${info.routeIndex + 1} - Stop ${info.positionInRoute}</div>
+                  <div style="font-size: 12px; color: #6b7280;">Order #${order.squareOrderId.slice(-4)}</div>
                 </div>
               </div>
               
@@ -433,7 +451,7 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
       )}
 
       {/* Off-screen order indicators */}
-      {offscreenOrders.map(({ order, position, direction, index, color }) => {
+      {offscreenOrders.map(({ order, position, direction, routeNumber, color }) => {
 
         return (
           <div
@@ -472,7 +490,7 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
               <div
                 className="text-white font-bold text-xs"
               >
-                {index}
+                {routeNumber}
               </div>
               
               {/* Directional arrow */}
@@ -496,7 +514,7 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
             <div className={`absolute ${
               direction === 'top' ? 'top-full mt-2' : 'bottom-full mb-2'
             } left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-gray-900 text-white text-xs rounded-lg px-3 py-2 whitespace-nowrap pointer-events-none shadow-lg`}>
-              <div className="font-semibold">#{index}: {order.customerName}</div>
+              <div className="font-semibold">Route {routeNumber}: {order.customerName}</div>
               <div className="text-gray-300">${order.totalAmount.toFixed(2)}</div>
               <div className={`absolute ${
                 direction === 'top' ? 'bottom-full' : 'top-full'

@@ -435,6 +435,9 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
                     </div>
                   </div>
                   <div className="flex items-center space-x-2 flex-shrink-0">
+                    <div className="text-xs text-gray-500">
+                      ${order.totalAmount.toFixed(2)}
+                    </div>
                   </div>
                 </div>
               ))}
