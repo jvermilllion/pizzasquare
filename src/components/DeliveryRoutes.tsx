@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Order } from '../types/orders';
 import { restaurantLocation } from '../data/realData';
-import { MapPin, Truck, Phone, Archive, History, X, Check, ArrowLeft, ArrowRight } from 'lucide-react';
 
 // Color palette for routes
 const ROUTE_COLORS = [
@@ -189,17 +188,6 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
   const [showHistory, setShowHistory] = useState(false);
   const [draggedOrder, setDraggedOrder] = useState<{ order: Order; routeIndex: number; fromQueue?: boolean } | null>(null);
   const [dragOverTarget, setDragOverTarget] = useState<{ type: 'route' | 'queue'; index?: number } | null>(null);
-  const [dragState, setDragState] = useState<{
-    routeId: string | null;
-    offset: number;
-    isDragging: boolean;
-    startX: number;
-  }>({
-    routeId: null,
-    offset: 0,
-    isDragging: false,
-    startX: 0
-  });
 
   const routeGroups = useMemo(() => groupOrdersIntoRoutes(orders), [orders]);
 
@@ -285,92 +273,6 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
     }
     setDraggedOrder(null);
   };
-
-  const handleTouchStart = (e: React.TouchEvent, routeId: string) => {
-    const touch = e.touches[0];
-    setDragState({
-      routeId,
-      offset: 0,
-      isDragging: true,
-      startX: touch.clientX
-    });
-  };
-
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!dragState.isDragging || !dragState.routeId) return;
-    
-    const touch = e.touches[0];
-    const offset = touch.clientX - dragState.startX;
-    
-    // Only allow left swipe (negative offset)
-    if (offset < 0) {
-      setDragState(prev => ({
-        ...prev,
-        offset: Math.max(offset, -150)
-      }));
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (!dragState.isDragging || !dragState.routeId) return;
-    
-    // If swiped far enough left, archive the route
-    if (dragState.offset < -80) {
-      handleArchiveRoute(dragState.routeId);
-    }
-    
-    // Reset drag state
-    setDragState({
-      routeId: null,
-      offset: 0,
-      isDragging: false,
-      startX: 0
-    });
-  };
-
-  const handleMouseDown = (e: React.MouseEvent, routeId: string) => {
-    e.preventDefault();
-    setDragState({
-      routeId,
-      offset: 0,
-      isDragging: true,
-      startX: e.clientX
-    });
-    
-    const handleMouseMove = (moveEvent: MouseEvent) => {
-      const offset = moveEvent.clientX - e.clientX;
-      // Only allow left drag (negative offset)
-      if (offset < 0) {
-        setDragState(prev => ({
-          ...prev,
-          offset: Math.max(offset, -150)
-        }));
-      }
-    };
-    
-    const handleMouseUp = () => {
-      setDragState(currentState => {
-        // If dragged far enough left, archive the route
-        if (currentState.isDragging && currentState.routeId && currentState.offset < -80) {
-          handleArchiveRoute(currentState.routeId);
-        }
-        
-        // Reset drag state
-        return {
-          routeId: null,
-          offset: 0,
-          isDragging: false,
-          startX: 0
-        };
-      });
-      
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-    };
-    
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
-  };
   // Filter routes based on view mode
   const activeRoutes = routeGroups.filter(route => !archivedRoutes.includes(route.id));
   const archivedRoutesList = routeGroups.filter(route => archivedRoutes.includes(route.id));
@@ -429,28 +331,18 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
         {displayRoutes.map((route, routeIndex) => {
           const isArchived = archivedRoutes.includes(route.id);
           const isDropTarget = dragOverTarget?.type === 'route' && dragOverTarget?.index === routeIndex;
-          const isDragging = dragState.isDragging && dragState.routeId === route.id;
           
           return (
             <div
               key={route.id}
-              className={`relative bg-white border-2 rounded-lg transition-all duration-200 ${
+              className={`bg-white border-2 rounded-lg transition-all duration-200 ${
                 isArchived ? 'opacity-60' : ''
               } ${
                 isDropTarget ? 'border-blue-400 bg-blue-50 border-2 shadow-lg' : 'border-gray-200'
-              } ${
-                isDragging ? 'transform scale-95 opacity-50' : ''
               }`}
-              style={{
-                transform: isDragging ? `translateX(${dragState.offset}px)` : 'none'
-              }}
               onDragOver={!isArchived ? (e) => handleRouteDragOver(e, routeIndex) : undefined}
               onDragLeave={!isArchived ? handleRouteDragLeave : undefined}
               onDrop={!isArchived ? (e) => handleRouteDrop(e, routeIndex) : undefined}
-              onTouchStart={!isArchived ? (e) => handleTouchStart(e, route.id) : undefined}
-              onTouchMove={!isArchived ? handleTouchMove : undefined}
-              onTouchEnd={!isArchived ? handleTouchEnd : undefined}
-              onMouseDown={!isArchived ? (e) => handleMouseDown(e, route.id) : undefined}
             >
               {/* Route Header */}
               <div className="p-4 border-b border-gray-100">
@@ -477,22 +369,22 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
                         🗺️
                       </button>
                     )}
-                    {!showHistory && (
+                    {!showHistory && !isArchived && (
                       <button
                         onClick={() => handleArchiveRoute(route.id)}
-                        className="text-red-600 hover:text-red-700 p-1"
+                        className="text-gray-500 hover:text-red-600 p-1 transition-colors"
                         title="Archive route"
                       >
-                        📦
+                        <Archive className="w-4 h-4" />
                       </button>
                     )}
                     {showHistory && (
                       <button
                         onClick={() => handleUnarchiveRoute(route.id)}
-                        className="text-green-600 hover:text-green-700 p-1"
+                        className="text-green-600 hover:text-green-700 p-1 transition-colors"
                         title="Restore route"
                       >
-                        ↩️
+                        <ArrowLeft className="w-4 h-4" />
                       </button>
                     )}
                   </div>
@@ -524,6 +416,7 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
                     draggable={!isArchived}
                     onDragStart={!isArchived ? (e) => handleOrderDragStart(e, order, routeIndex) : undefined}
                     onDragEnd={!isArchived ? handleOrderDragEnd : undefined}
+                    title={!isArchived ? "Drag to move to another route or back to queue" : ""}
                   >
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center">
@@ -565,11 +458,11 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
                 ))}
               </div>
 
-              {/* Archive Hint */}
-              {!isArchived && !showHistory && (
+              {/* Drag Instructions */}
+              {!isArchived && !showHistory && route.orders.length > 0 && (
                 <div className="px-4 pb-4">
                   <div className="text-xs text-gray-400 text-center">
-                    💡 Swipe left or drag left to archive • Drag orders to reorganize
+                    💡 Drag orders to move between routes • Use archive button to complete routes
                   </div>
                 </div>
               )}
