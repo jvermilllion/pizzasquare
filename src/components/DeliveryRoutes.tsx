@@ -205,17 +205,15 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
 
   const handleMouseDown = (e: React.MouseEvent, routeId: string) => {
     e.preventDefault();
-    const startX = e.clientX;
     setDragState({
       routeId,
       offset: 0,
       isDragging: true,
-      startX
+      startX: e.clientX
     });
     
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!dragState.isDragging) return;
-      const offset = e.clientX - startX;
+    const handleMouseMove = (moveEvent: MouseEvent) => {
+      const offset = moveEvent.clientX - e.clientX;
       // Only allow left drag (negative offset)
       if (offset < 0) {
         setDragState(prev => ({
@@ -226,17 +224,19 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
     };
     
     const handleMouseUp = () => {
-      // If dragged far enough left, archive the route
-      if (dragState.isDragging && dragState.routeId && dragState.offset < -80) {
-        handleArchiveRoute(dragState.routeId);
-      }
-      
-      // Reset drag state
-      setDragState({
-        routeId: null,
-        offset: 0,
-        isDragging: false,
-        startX: 0
+      setDragState(currentState => {
+        // If dragged far enough left, archive the route
+        if (currentState.isDragging && currentState.routeId && currentState.offset < -80) {
+          handleArchiveRoute(currentState.routeId);
+        }
+        
+        // Reset drag state
+        return {
+          routeId: null,
+          offset: 0,
+          isDragging: false,
+          startX: 0
+        };
       });
       
       document.removeEventListener('mousemove', handleMouseMove);
