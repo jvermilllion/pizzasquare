@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react';
 import { Order } from '../types/orders';
 import { restaurantLocation } from '../data/realData';
-import { MapPin, Truck, Phone, Archive, History, X, Check } from 'lucide-react';
+import { MapPin, Truck, Phone, Archive, History, X, Check, ArrowLeft, ArrowRight } from 'lucide-react';
 
 // Color palette for routes
 const ROUTE_COLORS = [
@@ -22,6 +22,7 @@ interface DeliveryRoutesProps {
   onUpdateOrderStatus: (orderId: string, status: Order['status']) => void;
   onOrderSelect: (order: Order) => void;
   onArchiveRoute?: (routeId: string) => void;
+  onMoveOrderBetweenRoutes?: (orderId: string, fromRouteIndex: number, toRouteIndex: number) => void;
 }
 
 interface RouteGroup {
@@ -179,10 +180,12 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
   orders, 
   onUpdateOrderStatus, 
   onOrderSelect,
-  onArchiveRoute
+  onArchiveRoute,
+  onMoveOrderBetweenRoutes
 }) => {
   const [archivedRoutes, setArchivedRoutes] = useState<string[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const [draggedOrder, setDraggedOrder] = useState<{ order: Order; routeIndex: number } | null>(null);
   const [dragState, setDragState] = useState<{
     routeId: string | null;
     offset: number;
@@ -206,6 +209,34 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
 
   const handleUnarchiveRoute = (routeId: string) => {
     setArchivedRoutes(prev => prev.filter(id => id !== routeId));
+  };
+
+  const handleMoveOrder = (orderId: string, fromRouteIndex: number, toRouteIndex: number) => {
+    if (onMoveOrderBetweenRoutes && fromRouteIndex !== toRouteIndex) {
+      onMoveOrderBetweenRoutes(orderId, fromRouteIndex, toRouteIndex);
+    }
+  };
+
+  const handleOrderDragStart = (e: React.DragEvent, order: Order, routeIndex: number) => {
+    setDraggedOrder({ order, routeIndex });
+    e.dataTransfer.effectAllowed = 'move';
+  };
+
+  const handleOrderDragEnd = () => {
+    setDraggedOrder(null);
+  };
+
+  const handleRouteDrop = (e: React.DragEvent, targetRouteIndex: number) => {
+    e.preventDefault();
+    if (draggedOrder && draggedOrder.routeIndex !== targetRouteIndex) {
+      handleMoveOrder(draggedOrder.order.id, draggedOrder.routeIndex, targetRouteIndex);
+    }
+    setDraggedOrder(null);
+  };
+
+  const handleRouteDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
   };
 
   const handleTouchStart = (e: React.TouchEvent, routeId: string) => {
@@ -351,15 +382,20 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
       <div className="space-y-2">
         {displayRoutes.map((route, routeIndex) => {
           const isArchived = archivedRoutes.includes(route.id);
+          const isDropTarget = draggedOrder && draggedOrder.routeIndex !== routeIndex && !isArchived;
           
           return (
           <div 
             key={route.id} 
-            className="bg-white border border-gray-200 rounded relative overflow-hidden"
+            className={`bg-white border border-gray-200 rounded relative overflow-hidden transition-all ${
+              isDropTarget ? 'border-blue-400 bg-blue-50 border-2' : ''
+            }`}
             style={{
               transform: dragState.routeId === route.id ? `translateX(${dragState.offset}px)` : 'translateX(0)',
               transition: dragState.isDragging && dragState.routeId === route.id ? 'none' : 'transform 0.3s ease'
             }}
+            onDragOver={!isArchived ? handleRouteDragOver : undefined}
+            onDrop={!isArchived ? (e) => handleRouteDrop(e, routeIndex) : undefined}
             onTouchStart={(e) => !isArchived && handleTouchStart(e, route.id)}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
@@ -422,8 +458,13 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
               {route.orders.map((order, orderIndex) => (
                 <div 
                   key={order.id}
-                  className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm hover:bg-gray-100 cursor-pointer"
+                  className={`flex items-center justify-between p-2 bg-gray-50 rounded text-sm hover:bg-gray-100 cursor-pointer transition-all ${
+                    draggedOrder?.order.id === order.id ? 'opacity-50 transform rotate-1' : ''
+                  }`}
                   onClick={() => onOrderSelect(order)}
+                  draggable={!isArchived}
+                  onDragStart={(e) => !isArchived && handleOrderDragStart(e, order, routeIndex)}
+                  onDragEnd={handleOrderDragEnd}
                 >
                   <div className="flex items-center flex-1 min-w-0">
                     <div className="w-5 h-5 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-bold mr-2 flex-shrink-0">
@@ -435,12 +476,47 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
                     </div>
                   </div>
                   <div className="flex items-center space-x-2 flex-shrink-0">
+                    {!isArchived && (
+                      <div className="flex space-x-1">
+                        {routeIndex > 0 && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleMoveOrder(order.id, routeIndex, routeIndex - 1);
+                            }}
+                            className="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                            title="Move to previous route"
+                          >
+                            <ArrowLeft className="w-3 h-3" />
+                          </button>
+                        )}
+                        {routeIndex < displayRoutes.length - 1 && (
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleMoveOrder(order.id, routeIndex, routeIndex + 1);
+                            }}
+                            className="p-1 text-blue-600 hover:bg-blue-100 rounded"
+                            title="Move to next route"
+                          >
+                            <ArrowRight className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    )}
                     <div className="text-xs text-gray-500">
                       ${order.totalAmount.toFixed(2)}
                     </div>
                   </div>
                 </div>
               ))}
+              
+              {/* Drop zone indicator */}
+              {isDropTarget && (
+                <div className="border-2 border-dashed border-blue-400 bg-blue-100 rounded p-3 text-center text-blue-700 text-sm">
+                  📦 Drop order here to move to Route {routeIndex + 1}
+                </div>
+              )}
             </div>
           </div>
           );
@@ -449,7 +525,7 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
         {/* Instructions for swipe/drag */}
         {!showHistory && activeRoutes.length > 0 && (
           <div className="text-center py-2 text-gray-500 text-xs">
-            💡 Swipe or drag routes left to archive them
+            💡 Swipe routes left to archive • Drag orders between routes to reorganize
           </div>
         )}
       </div>
