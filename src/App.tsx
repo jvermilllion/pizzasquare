@@ -80,7 +80,7 @@ function App() {
   return (
     <div className="min-h-screen bg-gray-100 relative">
       {/* Sidebar */}
-      <div className="fixed left-0 top-0 w-80 h-screen bg-white shadow-lg overflow-y-auto border-r border-gray-200 z-10">
+      <div className="fixed left-0 top-0 w-80 h-screen bg-white shadow-lg overflow-hidden border-r border-gray-200 z-10 flex flex-col">
         <div className="p-4 border-b border-gray-200 bg-white">
           <h1 className="text-xl font-bold mb-2 flex items-center text-gray-900">
             <MapPin className="w-5 h-5 mr-2 text-blue-600" />
@@ -92,12 +92,13 @@ function App() {
         </div>
 
         {/* Square Integration */}
-        <div className="p-4 border-b border-gray-200">
+        <div className="p-4 border-b border-gray-200 flex-shrink-0">
           <SquareIntegration onOrdersLoaded={handleSquareOrdersLoaded} />
         </div>
 
         {/* Delivery Routes */}
-        <div className="p-4">
+        <div className="flex-1 overflow-y-auto">
+          <div className="p-4">
           <DeliveryRoutes 
             orders={activeOrders}
             selectedOrder={selectedOrder}
@@ -110,6 +111,7 @@ function App() {
               // Could save to localStorage or send to backend
             }}
           />
+        </div>
         </div>
       </div>
 

@@ -291,7 +291,7 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 pb-4">
       {/* Compact Summary */}
       <div className="bg-blue-50 border border-blue-200 rounded p-2">
         <div className="flex justify-between items-center text-sm">
@@ -330,7 +330,7 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
       )}
 
       {/* Routes Display */}
-      <div className="space-y-3">
+      <div className="space-y-3 min-h-0">
         {displayRoutes.map((route, routeIndex) => {
           const isArchived = archivedRoutes.includes(route.id);
           const isDropTarget = dragOverTarget?.type === 'route' && dragOverTarget?.index === routeIndex;
@@ -406,7 +406,7 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
               )}
 
               {/* Orders List */}
-              <div className="p-2 space-y-1">
+              <div className="p-2 space-y-1 max-h-64 overflow-y-auto">
                 {route.orders.map((order, orderIndex) => (
                   <div
                     key={order.id}
@@ -420,17 +420,17 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
                     onDragStart={!isArchived ? (e) => handleOrderDragStart(e, order, routeIndex) : undefined}
                     onDragEnd={!isArchived ? handleOrderDragEnd : undefined}
                     title={!isArchived ? "Drag to move to another route or back to queue" : ""}
-                  >
+                            className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold text-xs mr-2 flex-shrink-0"
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
                         <div
                           className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold text-xs mr-2"
-                          style={{ backgroundColor: route.color }}
+                          <div className="min-w-0 flex-1">
                         >
-                          {orderIndex + 1}
+                            <div className="text-xs text-gray-500 truncate">{order.deliveryAddress}</div>
                         </div>
                         <div>
-                          <div className="font-medium text-xs">{order.customerName}</div>
+                        <div className="text-right flex-shrink-0 ml-2">
                           <div className="text-xs text-gray-500 truncate max-w-[200px]">{order.deliveryAddress}</div>
                         </div>
                       </div>
