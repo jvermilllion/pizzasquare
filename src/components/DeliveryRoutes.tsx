@@ -348,25 +348,25 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
               onDrop={!isArchived ? (e) => handleRouteDrop(e, routeIndex) : undefined}
             >
               {/* Route Header */}
-              <div className="p-4 border-b border-gray-100">
-                <div className="flex items-center justify-between mb-2">
+              <div className="p-3 border-b border-gray-100">
+                <div className="flex items-center justify-between mb-1">
                   <div className="flex items-center">
                     <div
-                      className="w-6 h-6 rounded-full mr-3 flex-shrink-0 border-2 border-white shadow-sm"
+                      className="w-5 h-5 rounded-full mr-2 flex-shrink-0 border-2 border-white shadow-sm"
                       style={{ backgroundColor: route.color }}
                     />
                     <div>
-                      <h4 className="font-bold text-gray-900">{route.name}</h4>
-                      <div className="text-sm text-gray-600">
+                      <h4 className="font-semibold text-gray-900 text-sm">{route.name}</h4>
+                      <div className="text-xs text-gray-600">
                         {route.orders.length} stops • ${route.totalValue.toFixed(2)} • ~{route.estimatedTime}min
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center space-x-1">
                     {!isArchived && (
                       <button
                         onClick={() => window.open(route.googleMapsUrl, '_blank')}
-                        className="text-blue-600 hover:text-blue-700 p-1"
+                        className="text-blue-600 hover:text-blue-700 p-1 text-sm"
                         title="Open in Google Maps"
                       >
                         🗺️
@@ -375,19 +375,19 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
                     {!showHistory && !isArchived && (
                       <button
                         onClick={() => handleArchiveRoute(route.id)}
-                        className="text-gray-500 hover:text-red-600 p-1 transition-colors"
+                        className="text-gray-500 hover:text-red-600 p-0.5 transition-colors"
                         title="Archive route"
                       >
-                        <Archive className="w-4 h-4" />
+                        <Archive className="w-3 h-3" />
                       </button>
                     )}
                     {showHistory && (
                       <button
                         onClick={() => handleUnarchiveRoute(route.id)}
-                        className="text-green-600 hover:text-green-700 p-1 transition-colors"
+                        className="text-green-600 hover:text-green-700 p-0.5 transition-colors"
                         title="Restore route"
                       >
-                        <ArrowLeft className="w-4 h-4" />
+                        <ArrowLeft className="w-3 h-3" />
                       </button>
                     )}
                   </div>
@@ -406,11 +406,11 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
               )}
 
               {/* Orders List */}
-              <div className="p-4 space-y-3">
+              <div className="p-2 space-y-1">
                 {route.orders.map((order, orderIndex) => (
                   <div
                     key={order.id}
-                    className={`border border-gray-200 rounded-lg p-3 cursor-pointer transition-all hover:shadow-sm ${
+                    className={`border border-gray-200 rounded p-2 cursor-pointer transition-all hover:shadow-sm ${
                       selectedOrder === order.id ? 'ring-2 ring-blue-500' : ''
                     } ${
                       draggedOrder?.id === order.id ? 'opacity-50 transform rotate-1' : ''
@@ -424,18 +424,18 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
                     <div className="flex items-center justify-between">
                       <div className="flex items-center">
                         <div
-                          className="w-6 h-6 rounded-full flex items-center justify-center text-white font-bold text-xs mr-3"
+                          className="w-5 h-5 rounded-full flex items-center justify-center text-white font-bold text-xs mr-2"
                           style={{ backgroundColor: route.color }}
                         >
                           {orderIndex + 1}
                         </div>
                         <div>
-                          <div className="font-medium text-sm">{order.customerName}</div>
-                          <div className="text-xs text-gray-600 truncate">{order.deliveryAddress}</div>
+                          <div className="font-medium text-xs">{order.customerName}</div>
+                          <div className="text-xs text-gray-500 truncate max-w-[200px]">{order.deliveryAddress}</div>
                         </div>
                       </div>
                       <div className="text-right">
-                        <div className="text-xs text-gray-500">{order.distance}</div>
+                        <div className="text-xs text-gray-600 font-medium">{order.distance}</div>
                       </div>
                     </div>
                   </div>
@@ -444,8 +444,8 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
 
               {/* Drag Instructions */}
               {!isArchived && !showHistory && route.orders.length > 0 && (
-                <div className="px-4 pb-4">
-                  <div className="text-xs text-gray-400 text-center">
+                <div className="px-2 pb-2">
+                  <div className="text-xs text-gray-400 text-center leading-tight">
                     💡 Drag orders to move between routes • Use archive button to complete routes
                   </div>
                 </div>
