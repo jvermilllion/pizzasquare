@@ -165,7 +165,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       map.current.removeSource('delivery-area');
     }
 
-    const deliveryData = getDeliveryAreaPolygon();
+    const deliveryData = getSavedDeliveryArea();
 
     // Add source
     map.current.addSource('delivery-area', {

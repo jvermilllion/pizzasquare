@@ -308,6 +308,32 @@ export const Settings: React.FC<SettingsProps> = ({ onOrdersLoaded, onNavigateBa
                 and right-clicking to "What's here?\" or use 
                 <a href="https://www.latlong.net/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline ml-1">LatLong.net</a>
               </div>
+
+              {/* Delivery Area Section */}
+              <div className="mt-6 pt-6 border-t border-gray-200">
+                <h3 className="text-lg font-semibold text-gray-900 mb-3">Custom Delivery Area</h3>
+                <div className="p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center mb-2">
+                    <div className="w-5 h-5 mr-2 bg-green-600 rounded flex items-center justify-center">
+                      <span className="text-white text-xs">✓</span>
+                    </div>
+                    <span className="font-medium text-green-800">Interactive Delivery Boundary</span>
+                  </div>
+                  <p className="text-green-700 text-sm mb-3">
+                    Use the "Edit Area" button on the main dashboard to draw a custom delivery boundary on the map. 
+                    Your custom boundary will be automatically saved and used for all delivery calculations.
+                  </p>
+                  <div className="text-xs text-green-600">
+                    <strong>How to use:</strong>
+                    <ol className="list-decimal list-inside mt-1 space-y-1 ml-2">
+                      <li>Click "Edit Area" button on the dashboard</li>
+                      <li>Click points on the map to draw your delivery boundary</li>
+                      <li>Double-click to complete the polygon</li>
+                      <li>Your custom area will be saved automatically</li>
+                    </ol>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 

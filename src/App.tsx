@@ -156,6 +156,8 @@ function App() {
                 orders={activeOrders} 
                 selectedOrder={selectedOrder}
                 onOrderSelect={setSelectedOrder}
+                isDrawingMode={isDrawingMode}
+                onDrawingComplete={handleDrawingComplete}
                 businessLocation={businessLocation}
               />
           </div>
