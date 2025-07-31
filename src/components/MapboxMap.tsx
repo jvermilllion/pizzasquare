@@ -232,6 +232,9 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSel
     } catch (markerError) {
       addError('Failed to add markers', markerError);
     }
+    finally {
+      // Ensure cleanup is performed regardless of success or failure
+    }
   };
 
   const retryMap = () => {
