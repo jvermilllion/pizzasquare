@@ -82,6 +82,16 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
     }
   }, [uniqueRoutes.length]);
 
+  // Force map resize when container dimensions change
+  useEffect(() => {
+    if (map.current && mapLoaded) {
+      const timer = setTimeout(() => {
+        map.current?.resize();
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [mapLoaded]);
+
   const toggleRoute = (routeIndex: number) => {
     setVisibleRoutes(prev => {
       const newSet = new Set(prev);
@@ -227,6 +237,13 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
 
     map.current.on('load', () => {
       setMapLoaded(true);
+      
+      // Force resize after map loads
+      setTimeout(() => {
+        if (map.current) {
+          map.current.resize();
+        }
+      }, 100);
       
       updateOffscreenOrders();
       
