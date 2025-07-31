@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { realOrders } from './data/realData';
+import { mockOrders as realOrders } from './data/realData';
 import { Settings } from './components/Settings';
 import { Order } from './types/orders';
 import { DeliveryRoutes } from './components/DeliveryRoutes.tsx';
