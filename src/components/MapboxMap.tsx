@@ -3,21 +3,7 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Order } from '../types/orders';
 import { restaurantLocation } from '../data/realData';
-import { AlertTriangle } from 'lucide-react';
-
-// Color palette for routes (matching DeliveryRoutes.tsx)
-const ROUTE_COLORS = [
-  '#ef4444', // red
-  '#3b82f6', // blue  
-  '#10b981', // green
-  '#f59e0b', // yellow
-  '#8b5cf6', // purple
-  '#ec4899', // pink
-  '#f97316', // orange
-  '#06b6d4', // cyan
-  '#84cc16', // lime
-  '#6366f1', // indigo
-];
+import { AlertTriangle, CheckCircle, XCircle, Clock } from 'lucide-react';
 
 // Set Mapbox access token
 mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN || '';
@@ -28,77 +14,84 @@ interface MapboxMapProps {
   onOrderSelect: (order: Order | null) => void;
 }
 
-// Group orders into routes and get color/position info
-function getOrderRouteInfo(orders: Order[]) {
-  const routeInfo: { [orderId: string]: { routeIndex: number; positionInRoute: number; color: string } } = {};
-  
-  orders.forEach((order, globalIndex) => {
-    const routeIndex = Math.floor(globalIndex / 3);
-    const positionInRoute = (globalIndex % 3) + 1;
-    const color = ROUTE_COLORS[routeIndex % ROUTE_COLORS.length];
-    
-    routeInfo[order.id] = {
-      routeIndex,
-      positionInRoute,
-      color
-    };
-  });
-  
-  return routeInfo;
+interface DiagnosticCheck {
+  name: string;
+  status: 'pending' | 'success' | 'error';
+  message: string;
+  details?: string;
 }
 
 export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSelect }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
-  const [mapLoaded, setMapLoaded] = useState(false);
-  const [mapError, setMapError] = useState<string | null>(null);
-  const [visibleRoutes, setVisibleRoutes] = useState<Set<number>>(new Set());
-  const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const [diagnostics, setDiagnostics] = useState<DiagnosticCheck[]>([]);
+  const [mapReady, setMapReady] = useState(false);
 
-  // Get route information for all orders
-  const routeInfo = getOrderRouteInfo(orders);
-
-  // Get unique routes for toggle controls
-  const uniqueRoutes = Array.from(new Set(Object.values(routeInfo).map(info => info.routeIndex)))
-    .sort((a, b) => a - b)
-    .map(routeIndex => ({
-      index: routeIndex,
-      color: ROUTE_COLORS[routeIndex % ROUTE_COLORS.length],
-      orderCount: Object.values(routeInfo).filter(info => info.routeIndex === routeIndex).length
-    }));
-
-  // Initialize all routes as visible
+  // Initialize diagnostics
   useEffect(() => {
-    if (uniqueRoutes.length > 0) {
-      setVisibleRoutes(new Set(uniqueRoutes.map(route => route.index)));
-    }
-  }, [uniqueRoutes.length]);
-
-  // Validate token
-  useEffect(() => {
-    if (!mapboxgl.accessToken || mapboxgl.accessToken.trim() === '') {
-      setMapError('Mapbox access token is missing. Please check your .env file.');
-      return;
-    }
+    const checks: DiagnosticCheck[] = [
+      { name: 'Environment Variable', status: 'pending', message: 'Checking VITE_MAPBOX_TOKEN...' },
+      { name: 'Token Format', status: 'pending', message: 'Validating token format...' },
+      { name: 'Container Element', status: 'pending', message: 'Checking DOM container...' },
+      { name: 'Mapbox GL JS', status: 'pending', message: 'Testing Mapbox library...' },
+      { name: 'Map Initialization', status: 'pending', message: 'Creating map instance...' },
+      { name: 'Style Loading', status: 'pending', message: 'Loading map style...' }
+    ];
     
-    if (!mapboxgl.accessToken.startsWith('pk.')) {
-      setMapError('Invalid Mapbox token format. Token should start with "pk."');
-      return;
-    }
-    
-    setMapError(null);
+    setDiagnostics(checks);
+    runDiagnostics(checks);
   }, []);
 
-  // Initialize map
-  useEffect(() => {
-    if (!mapContainer.current || mapError) return;
+  const updateDiagnostic = (name: string, status: 'success' | 'error', message: string, details?: string) => {
+    setDiagnostics(prev => prev.map(check => 
+      check.name === name ? { ...check, status, message, details } : check
+    ));
+  };
 
-    // Clean up existing map
-    if (map.current) {
-      map.current.remove();
+  const runDiagnostics = async (checks: DiagnosticCheck[]) => {
+    // Check 1: Environment Variable
+    const token = import.meta.env.VITE_MAPBOX_TOKEN;
+    if (!token || token.trim() === '') {
+      updateDiagnostic('Environment Variable', 'error', 'Missing VITE_MAPBOX_TOKEN', 
+        'Add VITE_MAPBOX_TOKEN to your .env file');
+      return;
+    }
+    updateDiagnostic('Environment Variable', 'success', `Token found: ${token.substring(0, 20)}...`);
+
+    // Check 2: Token Format
+    if (!token.startsWith('pk.')) {
+      updateDiagnostic('Token Format', 'error', 'Invalid token format', 
+        'Mapbox tokens should start with "pk."');
+      return;
+    }
+    updateDiagnostic('Token Format', 'success', 'Token format is valid');
+
+    // Check 3: Container Element
+    await new Promise(resolve => setTimeout(resolve, 100)); // Wait for DOM
+    if (!mapContainer.current) {
+      updateDiagnostic('Container Element', 'error', 'Map container not found', 
+        'DOM element is not available');
+      return;
+    }
+    const rect = mapContainer.current.getBoundingClientRect();
+    updateDiagnostic('Container Element', 'success', 
+      `Container ready (${rect.width}x${rect.height}px)`);
+
+    // Check 4: Mapbox GL JS
+    try {
+      updateDiagnostic('Mapbox GL JS', 'success', `Mapbox GL JS v${mapboxgl.version} loaded`);
+    } catch (error) {
+      updateDiagnostic('Mapbox GL JS', 'error', 'Mapbox GL JS not available', 
+        error instanceof Error ? error.message : 'Unknown error');
+      return;
     }
 
+    // Check 5: Map Initialization
     try {
+      if (map.current) {
+        map.current.remove();
+      }
+
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
         style: 'mapbox://styles/mapbox/navigation-day-v1',
@@ -106,58 +99,31 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
         zoom: 11.5
       });
 
-      // Add navigation controls
-      map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
+      updateDiagnostic('Map Initialization', 'success', 'Map instance created');
 
-      // Handle map load
+      // Check 6: Style Loading
       map.current.on('load', () => {
-        setMapLoaded(true);
+        updateDiagnostic('Style Loading', 'success', 'Map style loaded successfully');
+        setMapReady(true);
         
-        // Force resize after load
-        setTimeout(() => {
-          if (map.current) {
-            map.current.resize();
-          }
-        }, 100);
+        // Add basic markers once map is ready
+        addMarkers();
       });
 
-      // Handle errors
       map.current.on('error', (e) => {
         console.error('Mapbox error:', e);
-        if (e.error && e.error.message) {
-          if (e.error.message.includes('401')) {
-            setMapError('Invalid Mapbox token. Please check your VITE_MAPBOX_TOKEN in .env file.');
-          } else if (e.error.message.includes('403')) {
-            setMapError('Mapbox token lacks required permissions.');
-          } else {
-            setMapError(`Mapbox error: ${e.error.message}`);
-          }
-        } else {
-          setMapError('Map loading error. Please check your connection.');
-        }
+        const errorMsg = e.error?.message || 'Unknown map error';
+        updateDiagnostic('Style Loading', 'error', 'Failed to load map style', errorMsg);
       });
 
     } catch (error) {
-      console.error('Error initializing Mapbox:', error);
-      setMapError('Failed to initialize map. Please check your Mapbox token.');
+      updateDiagnostic('Map Initialization', 'error', 'Failed to create map', 
+        error instanceof Error ? error.message : 'Unknown error');
     }
+  };
 
-    return () => {
-      if (map.current) {
-        map.current.remove();
-        map.current = null;
-      }
-      setMapLoaded(false);
-    };
-  }, [mapError]);
-
-  // Add markers when map loads or orders change
-  useEffect(() => {
-    if (!map.current || !mapLoaded) return;
-
-    // Clear existing markers
-    markersRef.current.forEach(marker => marker.remove());
-    markersRef.current = [];
+  const addMarkers = () => {
+    if (!map.current || !mapReady) return;
 
     // Add restaurant marker
     const restaurantEl = document.createElement('div');
@@ -165,178 +131,108 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
     restaurantEl.style.fontSize = '32px';
     restaurantEl.style.cursor = 'pointer';
 
-    const restaurantMarker = new mapboxgl.Marker({ element: restaurantEl })
+    new mapboxgl.Marker({ element: restaurantEl })
       .setLngLat([restaurantLocation.lng, restaurantLocation.lat])
       .setPopup(new mapboxgl.Popup({ offset: 30 }).setHTML(`
-        <div style="padding: 12px;">
-          <h3 style="margin: 0 0 8px 0; font-weight: 600;">🍕 Square Bistro</h3>
-          <p style="margin: 0; font-size: 14px; color: #666;">${restaurantLocation.address}</p>
+        <div style="padding: 8px;">
+          <h3 style="margin: 0 0 4px 0; font-size: 14px;">🍕 ${restaurantLocation.name}</h3>
+          <p style="margin: 0; font-size: 12px; color: #666;">${restaurantLocation.address}</p>
         </div>
       `))
       .addTo(map.current);
 
-    markersRef.current.push(restaurantMarker);
-
     // Add order markers
-    orders.forEach((order) => {
-      const info = routeInfo[order.id];
-      const color = info.color;
-      
+    orders.forEach((order, index) => {
       const orderEl = document.createElement('div');
       orderEl.style.cssText = `
-        background: ${color};
-        border: 3px solid white;
+        background: #3b82f6;
+        border: 2px solid white;
         border-radius: 50%;
-        width: 30px;
-        height: 30px;
+        width: 24px;
+        height: 24px;
         display: flex;
         align-items: center;
         justify-content: center;
         font-weight: bold;
-        font-size: 12px;
+        font-size: 10px;
         color: white;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
         cursor: pointer;
       `;
-      orderEl.textContent = info.positionInRoute.toString();
+      orderEl.textContent = (index + 1).toString();
 
-      orderEl.addEventListener('click', () => {
-        onOrderSelect(order);
-      });
+      orderEl.addEventListener('click', () => onOrderSelect(order));
 
-      const orderMarker = new mapboxgl.Marker({ element: orderEl })
+      new mapboxgl.Marker({ element: orderEl })
         .setLngLat([order.deliveryLocation.lng, order.deliveryLocation.lat])
-        .setPopup(new mapboxgl.Popup({ offset: 30 }).setHTML(`
-          <div style="padding: 12px; max-width: 250px;">
-            <div style="margin-bottom: 8px;">
-              <div style="font-weight: 600;">Route ${info.routeIndex + 1} - Stop ${info.positionInRoute}</div>
-              <div style="font-size: 12px; color: #666;">Order #${order.squareOrderId.slice(-4)}</div>
-            </div>
-            <div style="margin-bottom: 8px;">
-              <div style="font-weight: 600;">${order.customerName}</div>
-              <div style="color: #10b981; font-weight: bold;">$${order.totalAmount.toFixed(2)}</div>
-            </div>
-            <div style="font-size: 12px; color: #666; margin-bottom: 8px;">
-              📍 ${order.deliveryAddress}
-            </div>
-            <div style="font-size: 12px;">
-              <strong>Items:</strong><br>
-              ${order.items.slice(0, 2).map(item => `${item.quantity}x ${item.name}`).join('<br>')}
-              ${order.items.length > 2 ? `<br>+${order.items.length - 2} more items` : ''}
-            </div>
+        .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(`
+          <div style="padding: 8px; max-width: 200px;">
+            <div style="font-weight: bold; margin-bottom: 4px;">${order.customerName}</div>
+            <div style="color: #10b981; font-weight: bold; margin-bottom: 4px;">$${order.totalAmount.toFixed(2)}</div>
+            <div style="font-size: 11px; color: #666;">${order.deliveryAddress}</div>
           </div>
         `))
-        .addTo(map.current);
-
-      markersRef.current.push(orderMarker);
+        .addTo(map.current!);
     });
+  };
 
-  }, [mapLoaded, orders, routeInfo, onOrderSelect]);
-
-  // Handle selected order
+  // Cleanup
   useEffect(() => {
-    if (selectedOrder && map.current && mapLoaded) {
-      map.current.flyTo({
-        center: [selectedOrder.deliveryLocation.lng, selectedOrder.deliveryLocation.lat],
-        zoom: 16,
-        duration: 1000
-      });
-    }
-  }, [selectedOrder, mapLoaded]);
-
-  // Route toggle functions
-  const toggleRoute = (routeIndex: number) => {
-    setVisibleRoutes(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(routeIndex)) {
-        newSet.delete(routeIndex);
-      } else {
-        newSet.add(routeIndex);
+    return () => {
+      if (map.current) {
+        map.current.remove();
       }
-      return newSet;
-    });
-  };
+    };
+  }, []);
 
-  const toggleAllRoutes = () => {
-    if (visibleRoutes.size === uniqueRoutes.length) {
-      setVisibleRoutes(new Set());
-    } else {
-      setVisibleRoutes(new Set(uniqueRoutes.map(route => route.index)));
+  const getStatusIcon = (status: DiagnosticCheck['status']) => {
+    switch (status) {
+      case 'success': return <CheckCircle className="w-4 h-4 text-green-500" />;
+      case 'error': return <XCircle className="w-4 h-4 text-red-500" />;
+      case 'pending': return <Clock className="w-4 h-4 text-yellow-500 animate-spin" />;
     }
   };
+
+  const allChecksComplete = diagnostics.every(check => check.status !== 'pending');
+  const hasErrors = diagnostics.some(check => check.status === 'error');
 
   return (
     <div className="relative w-full h-full">
-      {/* Error display */}
-      {mapError && (
-        <div className="absolute inset-0 z-30 bg-gray-900 bg-opacity-95 flex items-center justify-center">
-          <div className="bg-white rounded-lg p-8 max-w-md mx-4 text-center">
-            <AlertTriangle className="w-12 h-12 text-red-500 mx-auto mb-4" />
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">Map Error</h3>
-            <p className="text-gray-600 mb-4">{mapError}</p>
-            <div className="text-sm text-gray-500">
-              <p>To fix this:</p>
-              <ol className="list-decimal list-inside mt-2 space-y-1">
-                <li>Get a valid Mapbox token from <a href="https://account.mapbox.com/access-tokens/" target="_blank" rel="noopener noreferrer" className="text-blue-500 hover:underline">account.mapbox.com</a></li>
-                <li>Add it to your .env file as VITE_MAPBOX_TOKEN</li>
-                <li>Ensure it has required permissions</li>
-                <li>Restart your development server</li>
-              </ol>
-            </div>
+      {/* Diagnostics Panel */}
+      {(!allChecksComplete || hasErrors) && (
+        <div className="absolute top-4 left-4 z-20 bg-white rounded-lg shadow-lg p-4 max-w-md">
+          <div className="flex items-center mb-3">
+            <AlertTriangle className="w-5 h-5 text-yellow-500 mr-2" />
+            <h3 className="font-bold text-gray-900">Map Diagnostics</h3>
           </div>
-        </div>
-      )}
-
-      {/* Route Toggle Controls */}
-      {!mapError && uniqueRoutes.length > 0 && (
-        <div className="absolute top-4 right-4 z-20 bg-white rounded-lg shadow-lg p-4 max-w-xs">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-bold text-gray-900 text-sm">Route Visibility</h3>
-            <button
-              onClick={toggleAllRoutes}
-              className="text-xs bg-gray-100 hover:bg-gray-200 px-2 py-1 rounded transition-colors"
-            >
-              {visibleRoutes.size === uniqueRoutes.length ? 'Hide All' : 'Show All'}
-            </button>
-          </div>
-          <div className="space-y-2 max-h-48 overflow-y-auto">
-            {uniqueRoutes.map(route => (
-              <button
-                key={route.index}
-                onClick={() => toggleRoute(route.index)}
-                className={`flex items-center w-full p-2 rounded text-sm transition-all ${
-                  visibleRoutes.has(route.index)
-                    ? 'bg-gray-50 hover:bg-gray-100'
-                    : 'bg-gray-200 opacity-60 hover:bg-gray-300'
-                }`}
-              >
-                <div
-                  className="w-4 h-4 rounded-full mr-2 flex-shrink-0"
-                  style={{ backgroundColor: route.color }}
-                />
-                <div className="flex-1 text-left">
-                  <div className="font-medium">Route {route.index + 1}</div>
-                  <div className="text-xs text-gray-600">{route.orderCount} stops</div>
-                </div>
-                <div className="ml-2">
-                  {visibleRoutes.has(route.index) ? (
-                    <div className="w-4 h-4 bg-green-500 rounded-full flex items-center justify-center">
-                      <div className="w-2 h-2 bg-white rounded-full" />
-                    </div>
-                  ) : (
-                    <div className="w-4 h-4 border-2 border-gray-400 rounded-full" />
+          
+          <div className="space-y-2">
+            {diagnostics.map((check) => (
+              <div key={check.name} className="flex items-start space-x-2">
+                {getStatusIcon(check.status)}
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium text-gray-900">{check.name}</div>
+                  <div className="text-xs text-gray-600">{check.message}</div>
+                  {check.details && (
+                    <div className="text-xs text-red-600 mt-1">{check.details}</div>
                   )}
                 </div>
-              </button>
+              </div>
             ))}
           </div>
+
+          {hasErrors && (
+            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded text-xs">
+              <strong className="text-red-800">Fix the errors above to load the map.</strong>
+            </div>
+          )}
         </div>
       )}
 
       {/* Map Container */}
       <div 
         ref={mapContainer} 
-        className="w-full h-full rounded-lg"
+        className="w-full h-full"
         style={{ minHeight: '500px' }}
       />
     </div>
