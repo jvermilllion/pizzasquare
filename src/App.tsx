@@ -11,10 +11,17 @@ function App() {
   const [orders, setOrders] = useState<Order[]>(() => generateMockOrders());
   const [useSquareData, setUseSquareData] = useState(false);
   const [currentView, setCurrentView] = useState<'dashboard' | 'settings'>('dashboard');
+  const [isDrawingMode, setIsDrawingMode] = useState(false);
 
   // Business location from localStorage or default
   const businessLocation = useMemo(() => getBusinessLocation(), []);
   
+  // Handle drawing completion
+  const handleDrawingComplete = (polygon: any) => {
+    setIsDrawingMode(false);
+    // Polygon is automatically saved in MapboxMap component
+  };
+
   // Regenerate mock orders when business location changes
   const refreshMockOrders = () => {
     if (!useSquareData) {
@@ -132,6 +139,16 @@ function App() {
                 >
                   <SettingsIcon className="w-4 h-4 mr-2" />
                   Settings
+                </button>
+                <button
+                  onClick={() => setIsDrawingMode(!isDrawingMode)}
+                  className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    isDrawingMode
+                      ? 'bg-orange-600 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {isDrawingMode ? 'Drawing...' : 'Edit Area'}
                 </button>
               </div>
             </div>
