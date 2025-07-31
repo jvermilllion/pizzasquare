@@ -144,6 +144,7 @@ function App() {
                   onOrderSelect={setSelectedOrder}
                   onMoveOrderBetweenRoutes={handleMoveOrderBetweenRoutes}
                   onMoveOrderToQueue={handleMoveOrderToQueue}
+                  businessLocation={businessLocation}
                   onArchiveRoute={(routeId) => {
                     console.log('Archived route:', routeId);
                     // Could save to localStorage or send to backend

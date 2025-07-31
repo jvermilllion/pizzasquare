@@ -192,7 +192,10 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
   const [draggedOrder, setDraggedOrder] = useState<{ order: Order; routeIndex: number; fromQueue?: boolean } | null>(null);
   const [dragOverTarget, setDragOverTarget] = useState<{ type: 'route' | 'queue'; index?: number } | null>(null);
 
-  const routeGroups = useMemo(() => groupOrdersIntoRoutes(orders), [orders]);
+  const routeGroups = useMemo(() => {
+    const defaultLocation = { name: 'Restaurant', address: '123 Main St', lat: 41.5623, lng: -72.6509 };
+    return groupOrdersIntoRoutes(orders, businessLocation || defaultLocation);
+  }, [orders, businessLocation]);
 
   const handleArchiveRoute = (routeId: string) => {
     setArchivedRoutes(prev => [...prev, routeId]);

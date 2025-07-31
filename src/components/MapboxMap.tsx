@@ -213,11 +213,11 @@ interface MapboxMapProps {
       restaurantEl.style.cursor = 'pointer';
 
       new mapboxgl.Marker({ element: restaurantEl })
-        .setLngLat([restaurantLocation.lng, restaurantLocation.lat])
+        .setLngLat([businessLocation.lng, businessLocation.lat])
         .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(`
           <div style="padding: 8px;">
-            <strong>${restaurantLocation.name}</strong><br>
-            ${restaurantLocation.address}
+            <strong>${businessLocation.name}</strong><br>
+            ${businessLocation.address}
           </div>
         `))
         .addTo(map.current);
