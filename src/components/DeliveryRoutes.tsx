@@ -59,16 +59,19 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
             >
               <div className="p-3">
                 {/* Customer Name */}
-                <h3 className="font-medium text-gray-900 mb-2">{order.customerName}</h3>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-medium text-gray-900 text-left">{order.customerName}</h3>
+                  <span className="text-xs text-gray-500 font-mono">#{order.squareOrderId}</span>
+                </div>
                 
                 {/* Address */}
-                <div className="flex items-start text-sm text-gray-600 mb-2">
+                <div className="flex items-start text-sm text-gray-600 mb-2 text-left">
                   <MapPin className="w-4 h-4 mr-1 mt-0.5 flex-shrink-0" />
                   <span className="break-words">{order.deliveryAddress}</span>
                 </div>
                 
                 {/* Order Time */}
-                <div className="flex items-center text-sm text-gray-500">
+                <div className="flex items-center text-sm text-gray-500 text-left">
                   <Clock className="w-4 h-4 mr-1" />
                   <span>{formatDistanceToNow(new Date(order.createdAt), { addSuffix: true })}</span>
                 </div>

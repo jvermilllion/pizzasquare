@@ -230,14 +230,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSel
         cursor: pointer;
         user-select: none;
         filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.3));
-        transition: transform 0.2s;
       `;
-      restaurantEl.addEventListener('mouseenter', () => {
-        restaurantEl.style.transform = 'scale(1.1)';
-      });
-      restaurantEl.addEventListener('mouseleave', () => {
-        restaurantEl.style.transform = 'scale(1)';
-      });
 
       const restaurantMarker = new mapboxgl.Marker({ element: restaurantEl })
         .setLngLat([businessLocation.lng, businessLocation.lat])
@@ -270,21 +263,10 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSel
           cursor: pointer;
           border: 2px solid white;
           box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-          transition: all 0.2s;
           user-select: none;
         `;
         orderEl.textContent = (index + 1).toString();
         
-        // Hover effects
-        orderEl.addEventListener('mouseenter', () => {
-          orderEl.style.transform = 'scale(1.1)';
-          orderEl.style.zIndex = '1000';
-        });
-        orderEl.addEventListener('mouseleave', () => {
-          orderEl.style.transform = 'scale(1)';
-          orderEl.style.zIndex = '1';
-        });
-
         // Click handler
         orderEl.addEventListener('click', (e) => {
           e.stopPropagation();
