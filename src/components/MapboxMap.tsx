@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Order } from '../types/orders';
-import { restaurantLocation } from '../data/realData';
 import { AlertTriangle, CheckCircle, XCircle, Clock, RefreshCw } from 'lucide-react';
 
 // Set Mapbox access token
@@ -13,9 +12,14 @@ interface MapboxMapProps {
   orders: Order[];
   selectedOrder: Order | null;
   onOrderSelect: (order: Order | null) => void;
+  businessLocation: {
+    name: string;
+    address: string;
+    lat: number;
+    lng: number;
+  };
 }
 
-export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSelect }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [diagnostics, setDiagnostics] = useState<string[]>([]);

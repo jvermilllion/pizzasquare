@@ -14,6 +14,20 @@ export const Settings: React.FC<SettingsProps> = ({ onOrdersLoaded, onNavigateBa
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [mapboxToken, setMapboxToken] = useState(import.meta.env.VITE_MAPBOX_TOKEN || '');
   
+  // Business Location Settings
+  const [businessName, setBusinessName] = useState(
+    localStorage.getItem('businessName') || 'Square Bistro'
+  );
+  const [businessAddress, setBusinessAddress] = useState(
+    localStorage.getItem('businessAddress') || '123 Main Street, Middletown, CT 06457'
+  );
+  const [businessLat, setBusinessLat] = useState(
+    localStorage.getItem('businessLat') || '41.5623'
+  );
+  const [businessLng, setBusinessLng] = useState(
+    localStorage.getItem('businessLng') || '-72.6509'
+  );
+  
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
 
   const handleSave = async () => {
@@ -21,7 +35,12 @@ export const Settings: React.FC<SettingsProps> = ({ onOrdersLoaded, onNavigateBa
     
     try {
       // In a real app, you'd save these to a backend or local storage
-      // For now, we'll just simulate saving
+      // Save to localStorage
+      localStorage.setItem('businessName', businessName);
+      localStorage.setItem('businessAddress', businessAddress);
+      localStorage.setItem('businessLat', businessLat);
+      localStorage.setItem('businessLng', businessLng);
+      
       await new Promise(resolve => setTimeout(resolve, 1000));
       
       setSaveStatus('saved');
@@ -34,6 +53,7 @@ export const Settings: React.FC<SettingsProps> = ({ onOrdersLoaded, onNavigateBa
 
   const isSquareConfigured = squareToken && locationId;
   const isMapboxConfigured = mapboxToken;
+  const isBusinessConfigured = businessName && businessAddress && businessLat && businessLng;
 
   return (
     <div className="p-6 bg-gray-50 min-h-screen">
@@ -185,6 +205,108 @@ export const Settings: React.FC<SettingsProps> = ({ onOrdersLoaded, onNavigateBa
                 <p className="text-xs text-gray-500 mt-1">
                   Get from <a href="https://account.mapbox.com/access-tokens/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Mapbox Account</a>
                 </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Business Location Settings */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div className="p-6 border-b border-gray-200">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <div className="w-6 h-6 mr-3 bg-green-600 rounded flex items-center justify-center">
+                    <span className="text-white text-xs font-bold">🏪</span>
+                  </div>
+                  <div>
+                    <h2 className="text-xl font-semibold text-gray-900">Business Location</h2>
+                    <p className="text-gray-600 text-sm">Configure your business details and location</p>
+                  </div>
+                </div>
+                <div className={`flex items-center px-3 py-1 rounded-full text-sm font-medium ${
+                  isBusinessConfigured 
+                    ? 'bg-green-100 text-green-800' 
+                    : 'bg-yellow-100 text-yellow-800'
+                }`}>
+                  {isBusinessConfigured ? (
+                    <>
+                      <CheckCircle className="w-4 h-4 mr-1" />
+                      Configured
+                    </>
+                  ) : (
+                    <>
+                      <AlertTriangle className="w-4 h-4 mr-1" />
+                      Incomplete
+                    </>
+                  )}
+                </div>
+              </div>
+            </div>
+            
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Business Name
+                </label>
+                <input
+                  type="text"
+                  value={businessName}
+                  onChange={(e) => setBusinessName(e.target.value)}
+                  placeholder="Enter your business name"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Business Address
+                </label>
+                <input
+                  type="text"
+                  value={businessAddress}
+                  onChange={(e) => setBusinessAddress(e.target.value)}
+                  placeholder="Enter your full business address"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Used for route calculations and display
+                </p>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Latitude
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={businessLat}
+                    onChange={(e) => setBusinessLat(e.target.value)}
+                    placeholder="41.5623"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Longitude
+                  </label>
+                  <input
+                    type="number"
+                    step="any"
+                    value={businessLng}
+                    onChange={(e) => setBusinessLng(e.target.value)}
+                    placeholder="-72.6509"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                  />
+                </div>
+              </div>
+              
+              <div className="p-3 bg-blue-50 border border-blue-200 rounded text-xs">
+                <strong>💡 Tip:</strong> You can find coordinates by searching your address on 
+                <a href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline ml-1">Google Maps</a> 
+                and right-clicking to "What's here?" or use 
+                <a href="https://www.latlong.net/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline ml-1">LatLong.net</a>
               </div>
             </div>
           </div>

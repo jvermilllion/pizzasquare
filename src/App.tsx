@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { mockOrders as realOrders } from './data/realData';
+import { mockOrders as realOrders, restaurantLocation as defaultRestaurantLocation } from './data/realData';
 import { Settings } from './components/Settings';
 import { Order } from './types/orders';
 import { DeliveryRoutes } from './components/DeliveryRoutes.tsx';
@@ -11,6 +11,14 @@ function App() {
   const [orders, setOrders] = useState<Order[]>(realOrders);
   const [useSquareData, setUseSquareData] = useState(false);
   const [currentView, setCurrentView] = useState<'dashboard' | 'settings'>('dashboard');
+
+  // Business location from localStorage or default
+  const businessLocation = useMemo(() => ({
+    name: localStorage.getItem('businessName') || defaultRestaurantLocation.name,
+    address: localStorage.getItem('businessAddress') || defaultRestaurantLocation.address,
+    lat: parseFloat(localStorage.getItem('businessLat') || defaultRestaurantLocation.lat.toString()),
+    lng: parseFloat(localStorage.getItem('businessLng') || defaultRestaurantLocation.lng.toString())
+  }), []);
 
   // Handle Square orders being loaded
   const handleSquareOrdersLoaded = (squareOrders: Order[]) => {
@@ -151,6 +159,7 @@ function App() {
                 orders={activeOrders} 
                 selectedOrder={selectedOrder}
                 onOrderSelect={setSelectedOrder}
+                businessLocation={businessLocation}
               />
           </div>
         </>
