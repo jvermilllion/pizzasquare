@@ -8,36 +8,45 @@ import { Order } from '../types/orders';
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || '';
 mapboxgl.accessToken = MAPBOX_TOKEN;
 
-// Function to fetch Middletown Valley boundaries
-const fetchValleyBoundaries = async () => {
-  try {
-    const towns = ['Middletown, MD', 'Myersville, MD', 'Jefferson, MD'];
-    
-    const townBoundaries = await Promise.all(
-      towns.map(async (town) => {
-        try {
-          const response = await fetch(
-            `https://nominatim.openstreetmap.org/search?format=geojson&addressdetails=1&limit=1&polygon_geojson=1&q=${encodeURIComponent(town)}&countrycodes=us`
-          );
+// Custom delivery area polygon for Middletown Valley
+// Bounded by Route 40 (north), Route 340 (south), and mountain ridges (east/west)
+const getDeliveryAreaPolygon = () => {
+  return {
+    type: 'FeatureCollection',
+    features: [{
+      type: 'Feature',
+      properties: {
+        name: 'Middletown Valley Delivery Area'
+      },
+      geometry: {
+        type: 'Polygon',
+        coordinates: [[
+          // Northern boundary (along Route 40 above Myersville)
+          [-77.6200, 39.5100], // Northwest corner
+          [-77.4800, 39.5100], // Northeast corner
           
-          if (!response.ok) return null;
-          const data = await response.json();
-          return data.features && data.features.length > 0 ? data.features[0] : null;
-        } catch {
-          return null;
-        }
-      })
-    );
-    
-    const validFeatures = townBoundaries.filter(feature => feature !== null);
-    
-    return validFeatures.length > 0 ? {
-      type: 'FeatureCollection',
-      features: validFeatures
-    } : null;
-  } catch {
-    return null;
-  }
+          // Eastern boundary (South Mountain ridge)
+          [-77.4600, 39.4800],
+          [-77.4400, 39.4500],
+          [-77.4200, 39.4200],
+          [-77.4100, 39.3900],
+          
+          // Southern boundary (Route 340 through Jefferson/Burkittsville)
+          [-77.4200, 39.3600], // Southeast corner
+          [-77.6000, 39.3600], // Southwest corner
+          
+          // Western boundary (mountain ridge)
+          [-77.6100, 39.3900],
+          [-77.6150, 39.4200],
+          [-77.6200, 39.4500],
+          [-77.6200, 39.4800],
+          
+          // Close the polygon
+          [-77.6200, 39.5100]
+        ]]
+      }
+    }]
+  };
 };
 
 interface MapboxMapProps {
@@ -94,97 +103,74 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSel
     });
 
     map.current.on('load', () => {
-      loadValleyBoundaries();
+      loadDeliveryArea();
       updateMarkers();
     });
   };
 
-  const loadValleyBoundaries = async () => {
+  const loadDeliveryArea = () => {
     if (!map.current) return;
 
-    try {
-      const valleyData = await fetchValleyBoundaries();
-      if (!valleyData) return;
-
-      // Remove existing layers and source
-      const layerIds = ['valley-boundaries-labels', 'valley-boundaries-border', 'valley-boundaries-fill'];
-      layerIds.forEach(layerId => {
-        if (map.current!.getLayer(layerId)) {
-          map.current!.removeLayer(layerId);
-        }
-      });
-
-      if (map.current.getSource('valley-boundaries')) {
-        map.current.removeSource('valley-boundaries');
+    // Remove existing layers and source
+    const layerIds = ['delivery-area-label', 'delivery-area-border', 'delivery-area-fill'];
+    layerIds.forEach(layerId => {
+      if (map.current!.getLayer(layerId)) {
+        map.current!.removeLayer(layerId);
       }
+    });
 
-      // Add source
-      map.current.addSource('valley-boundaries', {
-        type: 'geojson',
-        data: valleyData
-      });
-
-      // Add fill layer
-      map.current.addLayer({
-        id: 'valley-boundaries-fill',
-        type: 'fill',
-        source: 'valley-boundaries',
-        paint: {
-          'fill-color': [
-            'case',
-            ['in', 'Middletown', ['get', 'display_name']], '#ef4444',
-            ['in', 'Myersville', ['get', 'display_name']], '#eab308',
-            ['in', 'Jefferson', ['get', 'display_name']], '#3b82f6',
-            '#6b7280'
-          ],
-          'fill-opacity': 0.2
-        }
-      });
-
-      // Add border layer
-      map.current.addLayer({
-        id: 'valley-boundaries-border',
-        type: 'line',
-        source: 'valley-boundaries',
-        paint: {
-          'line-color': [
-            'case',
-            ['in', 'Middletown', ['get', 'display_name']], '#dc2626',
-            ['in', 'Myersville', ['get', 'display_name']], '#ca8a04',
-            ['in', 'Jefferson', ['get', 'display_name']], '#2563eb',
-            '#4b5563'
-          ],
-          'line-width': 2,
-          'line-opacity': 0.8
-        }
-      });
-
-      // Add labels
-      map.current.addLayer({
-        id: 'valley-boundaries-labels',
-        type: 'symbol',
-        source: 'valley-boundaries',
-        layout: {
-          'text-field': [
-            'case',
-            ['in', 'Middletown', ['get', 'display_name']], 'Middletown',
-            ['in', 'Myersville', ['get', 'display_name']], 'Myersville',
-            ['in', 'Jefferson', ['get', 'display_name']], 'Jefferson',
-            ['get', 'name']
-          ],
-          'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
-          'text-size': 14,
-          'text-anchor': 'center'
-        },
-        paint: {
-          'text-color': '#374151',
-          'text-halo-color': '#ffffff',
-          'text-halo-width': 2
-        }
-      });
-    } catch {
-      // Silently fail boundary loading
+    if (map.current.getSource('delivery-area')) {
+      map.current.removeSource('delivery-area');
     }
+
+    const deliveryData = getDeliveryAreaPolygon();
+
+    // Add source
+    map.current.addSource('delivery-area', {
+      type: 'geojson',
+      data: deliveryData
+    });
+
+    // Add fill layer
+    map.current.addLayer({
+      id: 'delivery-area-fill',
+      type: 'fill',
+      source: 'delivery-area',
+      paint: {
+        'fill-color': '#3b82f6',
+        'fill-opacity': 0.15
+      }
+    });
+
+    // Add border layer
+    map.current.addLayer({
+      id: 'delivery-area-border',
+      type: 'line',
+      source: 'delivery-area',
+      paint: {
+        'line-color': '#2563eb',
+        'line-width': 2,
+        'line-opacity': 0.6
+      }
+    });
+
+    // Add label
+    map.current.addLayer({
+      id: 'delivery-area-label',
+      type: 'symbol',
+      source: 'delivery-area',
+      layout: {
+        'text-field': 'Delivery Area',
+        'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+        'text-size': 16,
+        'text-anchor': 'center'
+      },
+      paint: {
+        'text-color': '#1e40af',
+        'text-halo-color': '#ffffff',
+        'text-halo-width': 2
+      }
+    });
   };
 
   const updateMarkers = () => {
