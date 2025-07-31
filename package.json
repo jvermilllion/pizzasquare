@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@googlemaps/js-api-loader": "^1.16.10",
+    "@mapbox/mapbox-gl-draw": "^1.5.0",
     "@types/mapbox-gl": "^3.4.1",
     "date-fns": "^4.1.0",
     "lucide-react": "^0.532.0",
