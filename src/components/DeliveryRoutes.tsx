@@ -20,49 +20,6 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
   onUpdateOrderStatus, 
   onOrderSelect
 }) => {
-  const getStatusColor = (status: Order['status']) => {
-    switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'preparing': return 'bg-blue-100 text-blue-800 border-blue-200';
-      case 'ready': return 'bg-green-100 text-green-800 border-green-200';
-      case 'out_for_delivery': return 'bg-purple-100 text-purple-800 border-purple-200';
-      case 'delivered': return 'bg-gray-100 text-gray-800 border-gray-200';
-      case 'cancelled': return 'bg-red-100 text-red-800 border-red-200';
-      default: return 'bg-gray-100 text-gray-800 border-gray-200';
-    }
-  };
-
-  const getPriorityColor = (priority: Order['priority']) => {
-    switch (priority) {
-      case 'high': return 'text-red-600';
-      case 'medium': return 'text-yellow-600';
-      case 'low': return 'text-green-600';
-      default: return 'text-gray-600';
-    }
-  };
-
-  const getNextStatus = (currentStatus: Order['status']): Order['status'] | null => {
-    switch (currentStatus) {
-      case 'pending': return 'preparing';
-      case 'preparing': return 'ready';
-      case 'ready': return 'out_for_delivery';
-      case 'out_for_delivery': return 'delivered';
-      default: return null;
-    }
-  };
-
-  const getStatusLabel = (status: Order['status']) => {
-    switch (status) {
-      case 'pending': return 'Pending';
-      case 'preparing': return 'Preparing';
-      case 'ready': return 'Ready';
-      case 'out_for_delivery': return 'Out for Delivery';
-      case 'delivered': return 'Delivered';
-      case 'cancelled': return 'Cancelled';
-      default: return status;
-    }
-  };
-
   if (orders.length === 0) {
     return (
       <div className="text-center py-8 text-gray-500">
@@ -90,7 +47,6 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
       {/* Order Queue */}
       <div className="space-y-2">
         {orders.map((order) => {
-          const nextStatus = getNextStatus(order.status);
           const isSelected = selectedOrder?.id === order.id;
 
           return (
@@ -102,29 +58,28 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
               onClick={() => onOrderSelect(order)}
             >
               <div className="p-3">
-                {/* Order Header */}
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center space-x-2">
-                    <div className={`px-2 py-1 rounded-full text-xs font-medium border ${getStatusColor(order.status)}`}>
-                      {getStatusLabel(order.status)}
-                    </div>
-                    <div className={`text-xs font-medium ${getPriorityColor(order.priority)}`}>
-                      {order.priority.toUpperCase()}
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="font-bold text-gray-900">${order.totalAmount.toFixed(2)}</div>
-                    <div className="text-xs text-gray-500">#{order.squareOrderId.slice(-4)}</div>
-                  </div>
+                {/* Customer Name */}
+                <h3 className="font-medium text-gray-900 mb-2">{order.customerName}</h3>
+                
+                {/* Address */}
+                <div className="flex items-start text-sm text-gray-600 mb-2">
+                  <MapPin className="w-4 h-4 mr-1 mt-0.5 flex-shrink-0" />
+                  <span className="break-words">{order.deliveryAddress}</span>
                 </div>
-
-                {/* Customer Info */}
-                <div className="mb-2">
-                  <h3 className="font-medium text-gray-900 mb-1">{order.customerName}</h3>
-                  <div className="flex items-center text-sm text-gray-600 mb-1">
-                    <Phone className="w-4 h-4 mr-1" />
-                    {order.customerPhone}
-                  </div>
+                
+                {/* Order Time */}
+                <div className="flex items-center text-sm text-gray-500">
+                  <Clock className="w-4 h-4 mr-1" />
+                  <span>{formatDistanceToNow(new Date(order.createdAt), { addSuffix: true })}</span>
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
                   <div className="flex items-center text-sm text-gray-500">
                     <Clock className="w-4 h-4 mr-1" />
                     {formatDistanceToNow(new Date(order.createdAt), { addSuffix: true })}

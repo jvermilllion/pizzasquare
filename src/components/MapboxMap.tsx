@@ -294,27 +294,18 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSel
           .setLngLat([order.deliveryLocation.lng, order.deliveryLocation.lat])
           .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(`
             <div style="padding: 12px; min-width: 250px;">
-              <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 8px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
                 <h3 style="margin: 0; color: #1f2937; font-weight: bold;">${order.customerName}</h3>
                 <span style="background: #3b82f6; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: bold;">
                   #${index + 1}
                 </span>
               </div>
-              <div style="margin-bottom: 8px;">
-                <strong style="color: #059669;">$${order.totalAmount.toFixed(2)}</strong>
-                <span style="color: #6b7280; margin-left: 8px;">${order.items.length} item${order.items.length > 1 ? 's' : ''}</span>
-              </div>
-              <div style="margin-bottom: 8px; color: #374151; font-size: 14px;">
+              <div style="margin-bottom: 8px; color: #374151; font-size: 14px; line-height: 1.4;">
                 📍 ${order.deliveryAddress}
               </div>
-              <div style="color: #6b7280; font-size: 12px;">
-                📞 ${order.customerPhone}
+              <div style="color: #6b7280; font-size: 12px; margin-top: 6px;">
+                🕒 ${formatDistanceToNow(new Date(order.createdAt), { addSuffix: true })}
               </div>
-              ${order.specialInstructions ? `
-                <div style="margin-top: 8px; padding: 6px; background: #fef3c7; border-radius: 4px; font-size: 12px;">
-                  <strong>Note:</strong> ${order.specialInstructions}
-                </div>
-              ` : ''}
             </div>
           `))
           .addTo(map.current);
