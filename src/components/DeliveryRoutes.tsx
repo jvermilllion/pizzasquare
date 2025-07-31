@@ -51,8 +51,8 @@ function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: numbe
 }
 
 // Generate Google Maps route URL
-function generateGoogleMapsUrl(orders: Order[]): string {
-  const origin = encodeURIComponent(restaurantLocation.address);
+function generateGoogleMapsUrl(orders: Order[], businessLocation: { name: string; address: string; lat: number; lng: number }): string {
+  const origin = encodeURIComponent(businessLocation.address);
   const waypoints = orders
     .map(order => encodeURIComponent(order.deliveryAddress))
     .join('/');
@@ -61,11 +61,11 @@ function generateGoogleMapsUrl(orders: Order[]): string {
 }
 
 // Calculate estimated route time
-function calculateRouteTime(orders: Order[]): number {
+function calculateRouteTime(orders: Order[], businessLocation: { name: string; address: string; lat: number; lng: number }): number {
   if (orders.length === 0) return 0;
   
   let totalTime = 0;
-  let currentLocation = restaurantLocation;
+  let currentLocation = businessLocation;
   
   orders.forEach(order => {
     // Calculate distance to this order
@@ -82,7 +82,7 @@ function calculateRouteTime(orders: Order[]): number {
   // Add return time to restaurant
   const returnDistance = calculateDistance(
     currentLocation.lat, currentLocation.lng,
-    restaurantLocation.lat, restaurantLocation.lng
+    businessLocation.lat, businessLocation.lng
   );
   totalTime += returnDistance * 2.5;
   
@@ -166,8 +166,8 @@ function groupOrdersIntoRoutes(orders: Order[], businessLocation: { name: string
         name: `Route ${routeCounter}`,
         orders: currentRoute,
         totalValue,
-        estimatedTime: calculateRouteTime(currentRoute),
-        googleMapsUrl: generateGoogleMapsUrl(currentRoute),
+        estimatedTime: calculateRouteTime(currentRoute, businessLocation),
+        googleMapsUrl: generateGoogleMapsUrl(currentRoute, businessLocation),
         color: ROUTE_COLORS[(routeCounter - 1) % ROUTE_COLORS.length]
       });
       
