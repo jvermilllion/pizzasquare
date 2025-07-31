@@ -275,11 +275,13 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
       });
 
       orderEl.addEventListener('mouseenter', () => {
-        orderEl.style.transform = 'scale(1.1)';
+        orderEl.style.boxShadow = '0 4px 12px rgba(0,0,0,0.4), 0 0 0 3px rgba(59, 130, 246, 0.3)';
+        orderEl.style.zIndex = '1000';
       });
 
       orderEl.addEventListener('mouseleave', () => {
-        orderEl.style.transform = 'scale(1)';
+        orderEl.style.boxShadow = '0 2px 4px rgba(0,0,0,0.2)';
+        orderEl.style.zIndex = 'auto';
       });
 
       const orderMarker = new mapboxgl.Marker({ element: orderEl })
