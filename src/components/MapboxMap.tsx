@@ -12,16 +12,16 @@ mapboxgl.accessToken = MAPBOX_TOKEN;
 // Function to fetch zip code boundaries
 const fetchZipCodeBoundaries = async () => {
   try {
-    // Specific towns around Middletown, CT
+    // Specific towns around Middletown, MD
     const towns = [
-      'Middletown, CT',
-      'Cromwell, CT', 
-      'Durham, CT',
-      'Portland, CT',
-      'Haddam, CT',
-      'East Hampton, CT',
-      'Berlin, CT',
-      'Higganum, CT'
+      'Middletown, MD',
+      'Frederick, MD',
+      'Myersville, MD',
+      'Braddock Heights, MD',
+      'Jefferson, MD',
+      'Brunswick, MD',
+      'Walkersville, MD',
+      'Mount Airy, MD'
     ];
     
     // Fetch boundaries for each town
@@ -301,14 +301,14 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSel
         paint: {
           'fill-color': [
             'case',
-            ['==', ['get', 'display_name'], 'Middletown, Middlesex County, Connecticut, United States'], '#ef4444', // Red for Middletown
-            ['in', 'Cromwell', ['get', 'display_name']], '#f97316', // Orange for Cromwell
-            ['in', 'Durham', ['get', 'display_name']], '#eab308', // Yellow for Durham
-            ['in', 'Portland', ['get', 'display_name']], '#22c55e', // Green for Portland  
-            ['in', 'Haddam', ['get', 'display_name']], '#3b82f6', // Blue for Haddam
-            ['in', 'East Hampton', ['get', 'display_name']], '#8b5cf6', // Purple for East Hampton
-            ['in', 'Berlin', ['get', 'display_name']], '#ec4899', // Pink for Berlin
-            ['in', 'Higganum', ['get', 'display_name']], '#06b6d4', // Cyan for Higganum
+            ['in', 'Middletown', ['get', 'display_name']], '#ef4444', // Red for Middletown
+            ['in', 'Frederick', ['get', 'display_name']], '#f97316', // Orange for Frederick
+            ['in', 'Myersville', ['get', 'display_name']], '#eab308', // Yellow for Myersville
+            ['in', 'Braddock Heights', ['get', 'display_name']], '#22c55e', // Green for Braddock Heights
+            ['in', 'Jefferson', ['get', 'display_name']], '#3b82f6', // Blue for Jefferson
+            ['in', 'Brunswick', ['get', 'display_name']], '#8b5cf6', // Purple for Brunswick
+            ['in', 'Walkersville', ['get', 'display_name']], '#ec4899', // Pink for Walkersville
+            ['in', 'Mount Airy', ['get', 'display_name']], '#06b6d4', // Cyan for Mount Airy
             '#6b7280' // Gray fallback
           ],
           'fill-opacity': 0.3
@@ -327,14 +327,14 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSel
         paint: {
           'line-color': [
             'case',
-            ['==', ['get', 'display_name'], 'Middletown, Middlesex County, Connecticut, United States'], '#dc2626', // Darker red
-            ['in', 'Cromwell', ['get', 'display_name']], '#ea580c', // Darker orange
-            ['in', 'Durham', ['get', 'display_name']], '#ca8a04', // Darker yellow
-            ['in', 'Portland', ['get', 'display_name']], '#16a34a', // Darker green
-            ['in', 'Haddam', ['get', 'display_name']], '#2563eb', // Darker blue
-            ['in', 'East Hampton', ['get', 'display_name']], '#7c3aed', // Darker purple
-            ['in', 'Berlin', ['get', 'display_name']], '#be185d', // Darker pink
-            ['in', 'Higganum', ['get', 'display_name']], '#0891b2', // Darker cyan
+            ['in', 'Middletown', ['get', 'display_name']], '#dc2626', // Darker red
+            ['in', 'Frederick', ['get', 'display_name']], '#ea580c', // Darker orange
+            ['in', 'Myersville', ['get', 'display_name']], '#ca8a04', // Darker yellow
+            ['in', 'Braddock Heights', ['get', 'display_name']], '#16a34a', // Darker green
+            ['in', 'Jefferson', ['get', 'display_name']], '#2563eb', // Darker blue
+            ['in', 'Brunswick', ['get', 'display_name']], '#7c3aed', // Darker purple
+            ['in', 'Walkersville', ['get', 'display_name']], '#be185d', // Darker pink
+            ['in', 'Mount Airy', ['get', 'display_name']], '#0891b2', // Darker cyan
             '#4b5563' // Darker gray fallback
           ],
           'line-width': 3,
@@ -355,13 +355,13 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSel
           'text-field': [
             'case',
             ['in', 'Middletown', ['get', 'display_name']], 'Middletown',
-            ['in', 'Cromwell', ['get', 'display_name']], 'Cromwell', 
-            ['in', 'Durham', ['get', 'display_name']], 'Durham',
-            ['in', 'Portland', ['get', 'display_name']], 'Portland',
-            ['in', 'Haddam', ['get', 'display_name']], 'Haddam',
-            ['in', 'East Hampton', ['get', 'display_name']], 'East Hampton',
-            ['in', 'Berlin', ['get', 'display_name']], 'Berlin',
-            ['in', 'Higganum', ['get', 'display_name']], 'Higganum',
+            ['in', 'Frederick', ['get', 'display_name']], 'Frederick',
+            ['in', 'Myersville', ['get', 'display_name']], 'Myersville',
+            ['in', 'Braddock Heights', ['get', 'display_name']], 'Braddock Heights',
+            ['in', 'Jefferson', ['get', 'display_name']], 'Jefferson',
+            ['in', 'Brunswick', ['get', 'display_name']], 'Brunswick',
+            ['in', 'Walkersville', ['get', 'display_name']], 'Walkersville',
+            ['in', 'Mount Airy', ['get', 'display_name']], 'Mount Airy',
             ['get', 'name']
           ],
           'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
@@ -377,6 +377,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSel
       });
 
       addLog(`Added ${zipData.features.length} town boundaries around Middletown, CT`);
+      addLog(`Added ${zipData.features.length} town boundaries around Middletown, MD`);
       
     } catch (error) {
       addLog('Failed to load town boundaries: ' + (error as Error).message);

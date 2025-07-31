@@ -4,9 +4,9 @@ import { Order } from '../types/orders';
 export const getBusinessLocation = () => {
   const defaultLocation = {
     name: "Square Bistro",
-    address: "123 Main Street, Middletown, CT 06457",
-    lat: 41.5623,
-    lng: -72.6509
+    address: "123 Main Street, Middletown, MD 21769",
+    lat: 39.4437,
+    lng: -77.5428
   };
 
   return {
