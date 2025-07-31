@@ -1,127 +1,109 @@
 import { Order } from '../types/orders';
 
-export const restaurantLocation = {
-  name: "Square Bistro",
-  address: "123 Main Street, Middletown, CT 06457",
-  lat: 41.5623,
-  lng: -72.6509
+// Function to get business location from settings or use default
+export const getBusinessLocation = () => {
+  const defaultLocation = {
+    name: "Square Bistro",
+    address: "123 Main Street, Middletown, CT 06457",
+    lat: 41.5623,
+    lng: -72.6509
+  };
+
+  return {
+    name: localStorage.getItem('businessName') || defaultLocation.name,
+    address: localStorage.getItem('businessAddress') || defaultLocation.address,
+    lat: parseFloat(localStorage.getItem('businessLat') || defaultLocation.lat.toString()),
+    lng: parseFloat(localStorage.getItem('businessLng') || defaultLocation.lng.toString())
+  };
 };
 
-// Sample order data for development
-export const mockOrders: Order[] = [
-  {
-    id: "1",
-    squareOrderId: "sq_001",
-    customerName: "Sarah Johnson",
-    customerPhone: "(860) 555-0123",
-    items: [
-      { name: "Margherita Pizza", quantity: 1, price: 18.99 },
-      { name: "Caesar Salad", quantity: 1, price: 12.99 }
-    ],
-    totalAmount: 31.98,
-    status: "ready",
-    priority: "high",
-    createdAt: new Date(Date.now() - 25 * 60 * 1000).toISOString(),
-    deliveryAddress: "456 Oak Street, Middletown, CT 06457",
-    deliveryLocation: { lat: 41.5598, lng: -72.6442 },
-    paymentMethod: "Square",
-    orderSource: "app",
-    specialInstructions: "Ring doorbell twice",
-    distance: "1.2 mi"
-  },
-  {
-    id: "2", 
-    squareOrderId: "sq_002",
-    customerName: "Mike Chen",
-    customerPhone: "(860) 555-0124",
-    items: [
-      { name: "Pepperoni Pizza", quantity: 2, price: 19.99 },
-      { name: "Garlic Bread", quantity: 1, price: 6.99 }
-    ],
-    totalAmount: 46.97,
-    status: "preparing",
-    priority: "medium",
-    createdAt: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
-    deliveryAddress: "789 Pine Avenue, Middletown, CT 06457", 
-    deliveryLocation: { lat: 41.5645, lng: -72.6523 },
-    paymentMethod: "Square",
-    orderSource: "web",
-    distance: "0.8 mi"
-  },
-  {
-    id: "3",
-    squareOrderId: "sq_003", 
-    customerName: "Emily Rodriguez",
-    customerPhone: "(860) 555-0125",
-    items: [
-      { name: "Veggie Supreme Pizza", quantity: 1, price: 21.99 },
-      { name: "Buffalo Wings", quantity: 1, price: 13.99 }
-    ],
-    totalAmount: 35.98,
-    status: "pending",
-    priority: "medium",
-    createdAt: new Date(Date.now() - 8 * 60 * 1000).toISOString(),
-    deliveryAddress: "321 Elm Street, Middletown, CT 06457",
-    deliveryLocation: { lat: 41.5612, lng: -72.6475 },
-    paymentMethod: "Square", 
-    orderSource: "app",
-    distance: "1.5 mi"
-  },
-  {
-    id: "4",
-    squareOrderId: "sq_004",
-    customerName: "David Wilson", 
-    customerPhone: "(860) 555-0126",
-    items: [
-      { name: "Meat Lovers Pizza", quantity: 1, price: 23.99 },
-      { name: "Mozzarella Sticks", quantity: 1, price: 8.99 }
-    ],
-    totalAmount: 32.98,
-    status: "out_for_delivery", 
-    priority: "high",
-    createdAt: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
-    deliveryAddress: "654 Maple Drive, Middletown, CT 06457",
-    deliveryLocation: { lat: 41.5589, lng: -72.6398 },
-    paymentMethod: "Square",
-    orderSource: "phone",
-    specialInstructions: "Leave at door",
-    distance: "2.1 mi"
-  },
-  {
-    id: "5",
-    squareOrderId: "sq_005",
-    customerName: "Lisa Park",
-    customerPhone: "(860) 555-0127", 
-    items: [
-      { name: "Hawaiian Pizza", quantity: 1, price: 20.99 }
-    ],
-    totalAmount: 20.99,
-    status: "pending",
-    priority: "low",
-    createdAt: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
-    deliveryAddress: "987 Cedar Lane, Middletown, CT 06457",
-    deliveryLocation: { lat: 41.5634, lng: -72.6556 },
-    paymentMethod: "Square",
-    orderSource: "web", 
-    distance: "1.8 mi"
-  },
-  {
-    id: "6",
-    squareOrderId: "sq_006", 
-    customerName: "James Thompson",
-    customerPhone: "(860) 555-0128",
-    items: [
-      { name: "BBQ Chicken Pizza", quantity: 1, price: 22.99 },
-      { name: "Onion Rings", quantity: 1, price: 7.99 }
-    ],
-    totalAmount: 30.98,
-    status: "ready",
-    priority: "medium",
-    createdAt: new Date(Date.now() - 20 * 60 * 1000).toISOString(), 
-    deliveryAddress: "147 Birch Street, Middletown, CT 06457",
-    deliveryLocation: { lat: 41.5656, lng: -72.6434 },
-    paymentMethod: "Square",
-    orderSource: "app",
-    distance: "1.3 mi" 
-  }
-];
+// Function to generate random coordinates within delivery radius of business location
+const generateLocalCoordinates = (businessLat: number, businessLng: number, radiusMiles: number = 2) => {
+  // Convert miles to approximate degrees (rough approximation)
+  const latDegreesMile = 1 / 69; // 1 degree latitude ≈ 69 miles
+  const lngDegreesMile = 1 / (69 * Math.cos(businessLat * Math.PI / 180)); // longitude varies by latitude
+  
+  const maxLatOffset = radiusMiles * latDegreesMile;
+  const maxLngOffset = radiusMiles * lngDegreesMile;
+  
+  // Generate random offset within circular radius
+  const angle = Math.random() * 2 * Math.PI;
+  const distance = Math.random() * radiusMiles;
+  
+  const latOffset = distance * Math.cos(angle) * latDegreesMile;
+  const lngOffset = distance * Math.sin(angle) * lngDegreesMile;
+  
+  return {
+    lat: businessLat + latOffset,
+    lng: businessLng + lngOffset
+  };
+};
+
+// Function to generate mock local addresses
+const generateLocalAddress = (businessLocation: ReturnType<typeof getBusinessLocation>, index: number) => {
+  const streetNames = [
+    'Oak Street', 'Pine Avenue', 'Maple Drive', 'Cedar Lane', 'Elm Street',
+    'Birch Road', 'Willow Way', 'Cherry Street', 'Hickory Lane', 'Ash Avenue'
+  ];
+  
+  const streetNumbers = [
+    '123', '456', '789', '234', '567', '890', '345', '678', '901', '432'
+  ];
+  
+  // Extract city, state, zip from business address
+  const businessParts = businessLocation.address.split(',');
+  const cityStateZip = businessParts.length > 1 ? businessParts.slice(1).join(',').trim() : 'Local City, ST 12345';
+  
+  const streetName = streetNames[index % streetNames.length];
+  const streetNumber = streetNumbers[index % streetNumbers.length];
+  
+  return `${streetNumber} ${streetName}, ${cityStateZip}`;
+};
+
+// Function to generate mock orders relative to business location
+export const generateMockOrders = (): Order[] => {
+  const businessLocation = getBusinessLocation();
+  
+  const customerNames = [
+    'Sarah Johnson', 'Mike Chen', 'Emily Rodriguez', 'David Wilson', 
+    'Lisa Park', 'James Thompson', 'Maria Garcia', 'Robert Kim'
+  ];
+  
+  const phoneNumbers = [
+    '(555) 123-0001', '(555) 123-0002', '(555) 123-0003', '(555) 123-0004',
+    '(555) 123-0005', '(555) 123-0006', '(555) 123-0007', '(555) 123-0008'
+  ];
+
+  return customerNames.map((name, index) => {
+    const location = generateLocalCoordinates(businessLocation.lat, businessLocation.lng);
+    const address = generateLocalAddress(businessLocation, index);
+    
+    // Calculate approximate distance
+    const latDiff = location.lat - businessLocation.lat;
+    const lngDiff = location.lng - businessLocation.lng;
+    const distance = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff) * 69; // rough miles
+    
+    return {
+      id: (index + 1).toString(),
+      squareOrderId: `sq_00${index + 1}`,
+      customerName: name,
+      customerPhone: phoneNumbers[index],
+      items: [
+        { name: "Pizza", quantity: 1, price: 18.99 }
+      ],
+      totalAmount: 18.99,
+      status: index < 2 ? 'ready' as const : index < 4 ? 'preparing' as const : 'pending' as const,
+      priority: 'medium' as const,
+      createdAt: new Date(Date.now() - (index + 1) * 10 * 60 * 1000).toISOString(),
+      deliveryAddress: address,
+      deliveryLocation: location,
+      paymentMethod: "Square",
+      orderSource: 'app' as const,
+      distance: `${distance.toFixed(1)} mi`
+    };
+  });
+};
+
+// Export the current business location and mock orders
+export const restaurantLocation = getBusinessLocation();
+export const mockOrders = generateMockOrders();

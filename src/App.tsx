@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { mockOrders as realOrders, restaurantLocation as defaultRestaurantLocation } from './data/realData';
+import { generateMockOrders, getBusinessLocation } from './data/realData';
 import { Settings } from './components/Settings';
 import { Order } from './types/orders';
 import { DeliveryRoutes } from './components/DeliveryRoutes';
@@ -8,17 +8,19 @@ import { MapPin, Settings as SettingsIcon, Map } from 'lucide-react';
 
 function App() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
-  const [orders, setOrders] = useState<Order[]>(realOrders);
+  const [orders, setOrders] = useState<Order[]>(() => generateMockOrders());
   const [useSquareData, setUseSquareData] = useState(false);
   const [currentView, setCurrentView] = useState<'dashboard' | 'settings'>('dashboard');
 
   // Business location from localStorage or default
-  const businessLocation = useMemo(() => ({
-    name: localStorage.getItem('businessName') || defaultRestaurantLocation.name,
-    address: localStorage.getItem('businessAddress') || defaultRestaurantLocation.address,
-    lat: parseFloat(localStorage.getItem('businessLat') || defaultRestaurantLocation.lat.toString()),
-    lng: parseFloat(localStorage.getItem('businessLng') || defaultRestaurantLocation.lng.toString())
-  }), []);
+  const businessLocation = useMemo(() => getBusinessLocation(), []);
+  
+  // Regenerate mock orders when business location changes
+  const refreshMockOrders = () => {
+    if (!useSquareData) {
+      setOrders(generateMockOrders());
+    }
+  };
 
   // Handle Square orders being loaded
   const handleSquareOrdersLoaded = (squareOrders: Order[]) => {
