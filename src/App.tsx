@@ -11,6 +11,7 @@ function App() {
   const [orders, setOrders] = useState<Order[]>(() => generateMockOrders());
   const [useSquareData, setUseSquareData] = useState(false);
   const [isDrawingMode, setIsDrawingMode] = useState(false);
+  const [currentView, setCurrentView] = useState('dashboard');
 
   // Business location from localStorage or default
   const businessLocation = useMemo(() => getBusinessLocation(), []);
@@ -24,6 +25,10 @@ function App() {
   // Regenerate mock orders when business location changes
   const refreshMockOrders = () => {
     if (!useSquareData) {
+      setOrders(generateMockOrders());
+    }
+  };
+
   const handleUpdateOrderStatus = (orderId: string, status: Order['status']) => {
     setOrders(prev => prev.map(order => 
       order.id === orderId 
@@ -46,6 +51,10 @@ function App() {
       
       if (orderIndex === -1) return prev;
       
+      return updatedOrders;
+    });
+  };
+  
   const activeOrders = useMemo(() => {
     return orders.filter(order => 
       order.status === 'ready' || order.status === 'out_for_delivery'
