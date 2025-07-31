@@ -305,7 +305,7 @@ export const Settings: React.FC<SettingsProps> = ({ onOrdersLoaded, onNavigateBa
               <div className="p-3 bg-blue-50 border border-blue-200 rounded text-xs">
                 <strong>💡 Tip:</strong> You can find coordinates by searching your address on 
                 <a href="https://www.google.com/maps" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline ml-1">Google Maps</a> 
-                and right-clicking to "What's here?" or use 
+                and right-clicking to "What's here?\" or use 
                 <a href="https://www.latlong.net/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline ml-1">LatLong.net</a>
               </div>
             </div>
