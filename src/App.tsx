@@ -146,8 +146,8 @@ function App() {
           </div>
 
           {/* Main Content */}
-          <div className="ml-80 h-screen">
-            <div className="h-screen bg-white">
+          <div className="ml-80 h-screen relative">
+            <div className="absolute inset-0 bg-white">
               <MapboxMap 
                 orders={activeOrders} 
                 selectedOrder={selectedOrder}

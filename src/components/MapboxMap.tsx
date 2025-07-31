@@ -645,7 +645,11 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
           </div>
         );
       })}
-      <div ref={mapContainer} className="w-full h-full rounded-lg" />
+      <div 
+        ref={mapContainer} 
+        className="w-full h-full rounded-lg"
+        style={{ minHeight: '400px' }}
+      />
     </div>
   );
 };
