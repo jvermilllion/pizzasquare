@@ -23,6 +23,7 @@ interface MapboxMapProps {
 const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSelect, businessLocation }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
+  const markers = useRef<mapboxgl.Marker[]>([]);
   const [diagnostics, setDiagnostics] = useState<string[]>([]);
   const [currentStep, setCurrentStep] = useState<string>('Starting diagnostics...');
   const [error, setError] = useState<string | null>(null);
@@ -47,6 +48,9 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSel
   useEffect(() => {
     initializeMap();
     return () => {
+      // Clean up markers
+      markers.current.forEach(marker => marker.remove());
+      markers.current = [];
       if (map.current) {
         map.current.remove();
         map.current = null;
