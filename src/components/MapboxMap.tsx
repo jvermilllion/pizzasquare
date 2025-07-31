@@ -279,10 +279,22 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSel
         return;
       }
 
-      // Add town boundary source
+      // Remove existing layers first (before removing source)
+      if (map.current.getLayer('town-boundaries-labels')) {
+        map.current.removeLayer('town-boundaries-labels');
+      }
+      if (map.current.getLayer('town-boundaries-border')) {
+        map.current.removeLayer('town-boundaries-border');
+      }
+      if (map.current.getLayer('town-boundaries-fill')) {
+        map.current.removeLayer('town-boundaries-fill');
+      }
+
+      // Now remove the source
       if (map.current.getSource('town-boundaries')) {
         map.current.removeSource('town-boundaries');
       }
+      // Add town boundary source
 
       map.current.addSource('town-boundaries', {
         type: 'geojson',
@@ -290,9 +302,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSel
       });
 
       // Add town boundary fill layer
-      if (map.current.getLayer('town-boundaries-fill')) {
-        map.current.removeLayer('town-boundaries-fill');
-      }
 
       map.current.addLayer({
         id: 'town-boundaries-fill',
@@ -316,9 +325,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSel
       });
 
       // Add town boundary border layer
-      if (map.current.getLayer('town-boundaries-border')) {
-        map.current.removeLayer('town-boundaries-border');
-      }
 
       map.current.addLayer({
         id: 'town-boundaries-border',
@@ -343,9 +349,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSel
       });
 
       // Add town name labels
-      if (map.current.getLayer('town-boundaries-labels')) {
-        map.current.removeLayer('town-boundaries-labels');
-      }
 
       map.current.addLayer({
         id: 'town-boundaries-labels',
