@@ -37,7 +37,6 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
           <div className="flex items-center space-x-4">
             <span className="font-medium text-blue-900">{orders.length} Active Orders</span>
             <span className="text-blue-700">
-                </>
               ${orders.reduce((sum, order) => sum + order.totalAmount, 0).toFixed(2)} Total
             </span>
           </div>
@@ -77,7 +76,6 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
             </div>
           );
         })}
-                <>
       </div>
     </div>
   );
