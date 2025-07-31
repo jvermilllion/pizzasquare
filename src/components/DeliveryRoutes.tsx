@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, MapPin, Package } from 'lucide-react';
+import { Clock, MapPin, Package, Archive, CheckCircle } from 'lucide-react';
 import { Order } from '../types/orders';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -8,13 +8,17 @@ interface DeliveryRoutesProps {
   businessLocation: { name: string; address: string; lat: number; lng: number };
   selectedOrder?: Order | null;
   onUpdateOrderStatus: (orderId: string, status: Order['status']) => void;
+  onArchiveOrder: (orderId: string) => void;
   onOrderSelect: (order: Order) => void;
+  viewMode: 'active' | 'all' | 'archived';
 }
 
 export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({ 
   orders, 
   selectedOrder,
   onOrderSelect
+  onArchiveOrder,
+  viewMode
 }) => {
   if (orders.length === 0) {
     return (
@@ -27,11 +31,22 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
 
   return (
     <div className="space-y-3">
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+      <div className={`border rounded-lg p-3 ${
+        viewMode === 'active' 
+          ? 'bg-blue-50 border-blue-200' 
+          : viewMode === 'archived' 
+          ? 'bg-gray-50 border-gray-200' 
+          : 'bg-green-50 border-green-200'
+      }`}>
         <div className="flex items-center justify-between text-sm">
           <div className="flex items-center space-x-4">
-            <span className="font-medium text-blue-900">{orders.length} Active Orders</span>
-            <span className="text-blue-700">
+            <span className={`font-medium ${
+              viewMode === 'active' 
+                ? 'text-blue-900' 
+                : viewMode === 'archived' 
+                ? 'text-gray-900' 
+                : 'text-green-900'
+            }`}>
               ${orders.reduce((sum, order) => sum + order.totalAmount, 0).toFixed(2)} Total
             </span>
           </div>
@@ -66,6 +81,32 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
                   <Clock className="w-4 h-4 mr-1" />
                   <span>{formatDistanceToNow(new Date(order.createdAt), { addSuffix: true })}</span>
                 </div>
+                
+                {/* Archive button for active orders */}
+                {viewMode === 'active' && (
+                  <div className="flex justify-end mt-2 pt-2 border-t border-gray-100">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onArchiveOrder(order.id);
+                      }}
+                      className="flex items-center px-2 py-1 text-xs text-gray-600 hover:text-green-600 hover:bg-green-50 rounded transition-colors"
+                    >
+                      <CheckCircle className="w-3 h-3 mr-1" />
+                      Mark Complete
+                    </button>
+                  </div>
+                )}
+                
+                {/* Status indicator for archived orders */}
+                {viewMode === 'archived' && (
+                  <div className="flex justify-end mt-2 pt-2 border-t border-gray-100">
+                    <span className="flex items-center px-2 py-1 text-xs text-green-600 bg-green-50 rounded">
+                      <Archive className="w-3 h-3 mr-1" />
+                      Completed
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           );
