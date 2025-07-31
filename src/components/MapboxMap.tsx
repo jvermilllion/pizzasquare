@@ -9,6 +9,27 @@ import { AlertTriangle, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || '';
 mapboxgl.accessToken = MAPBOX_TOKEN;
 
+// Function to fetch zip code boundaries
+const fetchZipCodeBoundaries = async (lat: number, lng: number, radiusMiles: number = 5) => {
+  try {
+    // Using a simplified approach with US Census Bureau data
+    // In production, you'd use Mapbox Boundaries API or similar service
+    const response = await fetch(
+      `https://nominatim.openstreetmap.org/search?format=geojson&addressdetails=1&limit=10&viewbox=${lng-0.1},${lat-0.1},${lng+0.1},${lat+0.1}&bounded=1&polygon_geojson=1&q=postcode`
+    );
+    
+    if (!response.ok) {
+      throw new Error('Failed to fetch zip code data');
+    }
+    
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.warn('Could not fetch zip code boundaries:', error);
+    return null;
+  }
+};
+
 interface MapboxMapProps {
   orders: Order[];
   selectedOrder: Order | null;
@@ -31,6 +52,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSel
   const [success, setSuccess] = useState<boolean>(false);
   const [retryCount, setRetryCount] = useState<number>(0);
   const [showDiagnostics, setShowDiagnostics] = useState<boolean>(false);
+  const [showZipCodes, setShowZipCodes] = useState<boolean>(true);
   const maxRetries = 3;
 
   const addLog = (message: string) => {
@@ -162,6 +184,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSel
         addLog('✅ Map loaded successfully!');
         setSuccess(true);
         setRetryCount(0); // Reset retry count on success
+        loadZipCodeBoundaries();
         updateMarkers();
       });
 
@@ -208,6 +231,112 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSel
           setRetryCount(prev => prev + 1);
           initializeMap();
         }, 2000);
+      }
+    }
+  };
+
+  const loadZipCodeBoundaries = async () => {
+    if (!map.current || !showZipCodes) return;
+
+    try {
+      addLog('Loading zip code boundaries...');
+      
+      // Fetch zip code data around business location
+      const zipData = await fetchZipCodeBoundaries(businessLocation.lat, businessLocation.lng);
+      
+      if (!zipData || !zipData.features || zipData.features.length === 0) {
+        addLog('No zip code boundary data available');
+        return;
+      }
+
+      // Add zip code source
+      if (map.current.getSource('zip-codes')) {
+        map.current.removeSource('zip-codes');
+      }
+
+      map.current.addSource('zip-codes', {
+        type: 'geojson',
+        data: zipData
+      });
+
+      // Add zip code fill layer
+      if (map.current.getLayer('zip-codes-fill')) {
+        map.current.removeLayer('zip-codes-fill');
+      }
+
+      map.current.addLayer({
+        id: 'zip-codes-fill',
+        type: 'fill',
+        source: 'zip-codes',
+        paint: {
+          'fill-color': '#3b82f6',
+          'fill-opacity': 0.1
+        }
+      });
+
+      // Add zip code border layer
+      if (map.current.getLayer('zip-codes-border')) {
+        map.current.removeLayer('zip-codes-border');
+      }
+
+      map.current.addLayer({
+        id: 'zip-codes-border',
+        type: 'line',
+        source: 'zip-codes',
+        paint: {
+          'line-color': '#3b82f6',
+          'line-width': 2,
+          'line-opacity': 0.6
+        }
+      });
+
+      // Add zip code labels
+      if (map.current.getLayer('zip-codes-labels')) {
+        map.current.removeLayer('zip-codes-labels');
+      }
+
+      map.current.addLayer({
+        id: 'zip-codes-labels',
+        type: 'symbol',
+        source: 'zip-codes',
+        layout: {
+          'text-field': ['get', 'postcode'],
+          'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
+          'text-size': 14,
+          'text-anchor': 'center'
+        },
+        paint: {
+          'text-color': '#1f2937',
+          'text-halo-color': '#ffffff',
+          'text-halo-width': 2
+        }
+      });
+
+      addLog(`Added ${zipData.features.length} zip code boundaries`);
+      
+    } catch (error) {
+      addLog('Failed to load zip code boundaries: ' + (error as Error).message);
+    }
+  };
+
+  const toggleZipCodes = () => {
+    setShowZipCodes(!showZipCodes);
+    
+    if (map.current) {
+      const visibility = showZipCodes ? 'none' : 'visible';
+      
+      if (map.current.getLayer('zip-codes-fill')) {
+        map.current.setLayoutProperty('zip-codes-fill', 'visibility', visibility);
+      }
+      if (map.current.getLayer('zip-codes-border')) {
+        map.current.setLayoutProperty('zip-codes-border', 'visibility', visibility);
+      }
+      if (map.current.getLayer('zip-codes-labels')) {
+        map.current.setLayoutProperty('zip-codes-labels', 'visibility', visibility);
+      }
+      
+      if (!showZipCodes) {
+        loadZipCodeBoundaries();
       }
     }
   };
@@ -341,13 +470,27 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSel
         </div>
         
         {/* Toggle Diagnostics */}
-        <button
-          onClick={() => setShowDiagnostics(!showDiagnostics)}
-          className="bg-white rounded-lg shadow-lg p-2 text-gray-600 hover:text-gray-800"
-          title="Toggle diagnostics"
-        >
-          <AlertTriangle className="w-5 h-5" />
-        </button>
+        <div className="flex space-x-2">
+          <button
+            onClick={toggleZipCodes}
+            className={`bg-white rounded-lg shadow-lg px-3 py-2 text-sm font-medium transition-colors ${
+              showZipCodes 
+                ? 'text-blue-700 bg-blue-50 border border-blue-200' 
+                : 'text-gray-600 hover:text-gray-800'
+            }`}
+            title="Toggle zip code boundaries"
+          >
+            {showZipCodes ? 'Hide' : 'Show'} Zip Codes
+          </button>
+          
+          <button
+            onClick={() => setShowDiagnostics(!showDiagnostics)}
+            className="bg-white rounded-lg shadow-lg p-2 text-gray-600 hover:text-gray-800"
+            title="Toggle diagnostics"
+          >
+            <AlertTriangle className="w-5 h-5" />
+          </button>
+        </div>
       </div>
 
       {/* Detailed Diagnostics Panel */}
