@@ -1,6 +1,8 @@
 import React, { useEffect, useRef } from 'react';
 import mapboxgl from 'mapbox-gl';
+import MapboxDraw from '@mapbox/mapbox-gl-draw';
 import 'mapbox-gl/dist/mapbox-gl.css';
+import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
 import { formatDistanceToNow } from 'date-fns';
 import { Order } from '../types/orders';
 
@@ -8,9 +10,8 @@ import { Order } from '../types/orders';
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || '';
 mapboxgl.accessToken = MAPBOX_TOKEN;
 
-// Custom delivery area polygon for Middletown Valley
-// Bounded by Route 40 (north), Route 340 (south), and mountain ridges (east/west)
-const getDeliveryAreaPolygon = () => {
+// Default delivery area polygon for Middletown Valley
+const getDefaultDeliveryAreaPolygon = () => {
   return {
     type: 'FeatureCollection',
     features: [{
@@ -49,10 +50,30 @@ const getDeliveryAreaPolygon = () => {
   };
 };
 
+// Load saved delivery area or use default
+const getSavedDeliveryArea = () => {
+  const saved = localStorage.getItem('deliveryAreaPolygon');
+  if (saved) {
+    try {
+      return JSON.parse(saved);
+    } catch (e) {
+      console.warn('Failed to parse saved delivery area:', e);
+    }
+  }
+  return getDefaultDeliveryAreaPolygon();
+};
+
+// Save delivery area to localStorage
+const saveDeliveryArea = (polygon: any) => {
+  localStorage.setItem('deliveryAreaPolygon', JSON.stringify(polygon));
+};
+
 interface MapboxMapProps {
   orders: Order[];
   selectedOrder: Order | null;
   onOrderSelect: (order: Order | null) => void;
+  isDrawingMode?: boolean;
+  onDrawingComplete?: (polygon: any) => void;
   businessLocation: {
     name: string;
     address: string;
@@ -61,10 +82,18 @@ interface MapboxMapProps {
   };
 }
 
-const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSelect, businessLocation }) => {
+const MapboxMap: React.FC<MapboxMapProps> = ({ 
+  orders, 
+  selectedOrder, 
+  onOrderSelect, 
+  isDrawingMode = false,
+  onDrawingComplete,
+  businessLocation 
+}) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<mapboxgl.Marker[]>([]);
+  const draw = useRef<MapboxDraw | null>(null);
 
   useEffect(() => {
     initializeMap();
@@ -83,6 +112,12 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSel
       updateMarkers();
     }
   }, [orders, selectedOrder]);
+
+  useEffect(() => {
+    if (map.current && draw.current) {
+      toggleDrawingMode();
+    }
+  }, [isDrawingMode]);
 
   const initializeMap = async () => {
     if (!MAPBOX_TOKEN || !mapContainer.current) return;
@@ -105,6 +140,13 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSel
     map.current.on('load', () => {
       loadDeliveryArea();
       updateMarkers();
+      initializeDrawing();
+    });
+
+    map.current.on('click', (e) => {
+      if (!isDrawingMode) {
+        onOrderSelect(null);
+      }
     });
   };
 
