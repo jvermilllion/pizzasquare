@@ -10,20 +10,50 @@ const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || '';
 mapboxgl.accessToken = MAPBOX_TOKEN;
 
 // Function to fetch zip code boundaries
-const fetchZipCodeBoundaries = async (lat: number, lng: number, radiusMiles: number = 5) => {
+const fetchZipCodeBoundaries = async () => {
   try {
-    // Using a simplified approach with US Census Bureau data
-    // In production, you'd use Mapbox Boundaries API or similar service
-    const response = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=geojson&addressdetails=1&limit=10&viewbox=${lng-0.1},${lat-0.1},${lng+0.1},${lat+0.1}&bounded=1&polygon_geojson=1&q=postcode`
+    // Specific towns around Middletown, CT
+    const towns = [
+      'Middletown, CT',
+      'Cromwell, CT', 
+      'Durham, CT',
+      'Portland, CT',
+      'Haddam, CT',
+      'East Hampton, CT',
+      'Berlin, CT',
+      'Higganum, CT'
+    ];
+    
+    // Fetch boundaries for each town
+    const townBoundaries = await Promise.all(
+      towns.map(async (town) => {
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/search?format=geojson&addressdetails=1&limit=1&polygon_geojson=1&q=${encodeURIComponent(town)}&countrycodes=us`
+          );
+          
+          if (!response.ok) return null;
+          
+          const data = await response.json();
+          return data.features && data.features.length > 0 ? data.features[0] : null;
+        } catch (error) {
+          console.warn(`Failed to fetch boundary for ${town}:`, error);
+          return null;
+        }
+      })
     );
     
-    if (!response.ok) {
-      throw new Error('Failed to fetch zip code data');
+    // Filter out null results and create a GeoJSON FeatureCollection
+    const validFeatures = townBoundaries.filter(feature => feature !== null);
+    
+    if (validFeatures.length === 0) {
+      throw new Error('No valid town boundaries found');
     }
     
-    const data = await response.json();
-    return data;
+    return {
+      type: 'FeatureCollection',
+      features: validFeatures
+    };
   } catch (error) {
     console.warn('Could not fetch zip code boundaries:', error);
     return null;
@@ -241,99 +271,115 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSel
     try {
       addLog('Loading zip code boundaries...');
       
-      // Fetch zip code data around business location
-      const zipData = await fetchZipCodeBoundaries(businessLocation.lat, businessLocation.lng);
+      // Fetch zip code data for Middletown and surrounding CT towns
+      const zipData = await fetchZipCodeBoundaries();
       
       if (!zipData || !zipData.features || zipData.features.length === 0) {
-        addLog('No zip code boundary data available');
+        addLog('No town boundary data available');
         return;
       }
 
-      // Add zip code source
-      if (map.current.getSource('zip-codes')) {
-        map.current.removeSource('zip-codes');
+      // Add town boundary source
+      if (map.current.getSource('town-boundaries')) {
+        map.current.removeSource('town-boundaries');
       }
 
-      map.current.addSource('zip-codes', {
+      map.current.addSource('town-boundaries', {
         type: 'geojson',
         data: zipData
       });
 
-      // Add zip code fill layer
-      if (map.current.getLayer('zip-codes-fill')) {
-        map.current.removeLayer('zip-codes-fill');
+      // Add town boundary fill layer
+      if (map.current.getLayer('town-boundaries-fill')) {
+        map.current.removeLayer('town-boundaries-fill');
       }
 
       map.current.addLayer({
-        id: 'zip-codes-fill',
+        id: 'town-boundaries-fill',
         type: 'fill',
-        source: 'zip-codes',
+        source: 'town-boundaries',
         paint: {
           'fill-color': [
             'case',
-            ['==', ['%', ['to-number', ['get', 'postcode']], 6], 0], '#ef4444', // Red
-            ['==', ['%', ['to-number', ['get', 'postcode']], 6], 1], '#f97316', // Orange  
-            ['==', ['%', ['to-number', ['get', 'postcode']], 6], 2], '#eab308', // Yellow
-            ['==', ['%', ['to-number', ['get', 'postcode']], 6], 3], '#22c55e', // Green
-            ['==', ['%', ['to-number', ['get', 'postcode']], 6], 4], '#3b82f6', // Blue
-            ['==', ['%', ['to-number', ['get', 'postcode']], 6], 5], '#8b5cf6', // Purple
+            ['==', ['get', 'display_name'], 'Middletown, Middlesex County, Connecticut, United States'], '#ef4444', // Red for Middletown
+            ['in', 'Cromwell', ['get', 'display_name']], '#f97316', // Orange for Cromwell
+            ['in', 'Durham', ['get', 'display_name']], '#eab308', // Yellow for Durham
+            ['in', 'Portland', ['get', 'display_name']], '#22c55e', // Green for Portland  
+            ['in', 'Haddam', ['get', 'display_name']], '#3b82f6', // Blue for Haddam
+            ['in', 'East Hampton', ['get', 'display_name']], '#8b5cf6', // Purple for East Hampton
+            ['in', 'Berlin', ['get', 'display_name']], '#ec4899', // Pink for Berlin
+            ['in', 'Higganum', ['get', 'display_name']], '#06b6d4', // Cyan for Higganum
             '#6b7280' // Gray fallback
           ],
-          'fill-opacity': 0.25
+          'fill-opacity': 0.3
         }
       });
 
-      // Add zip code border layer
-      if (map.current.getLayer('zip-codes-border')) {
-        map.current.removeLayer('zip-codes-border');
+      // Add town boundary border layer
+      if (map.current.getLayer('town-boundaries-border')) {
+        map.current.removeLayer('town-boundaries-border');
       }
 
       map.current.addLayer({
-        id: 'zip-codes-border',
+        id: 'town-boundaries-border',
         type: 'line',
-        source: 'zip-codes',
+        source: 'town-boundaries',
         paint: {
           'line-color': [
             'case',
-            ['==', ['%', ['to-number', ['get', 'postcode']], 6], 0], '#dc2626', // Darker red
-            ['==', ['%', ['to-number', ['get', 'postcode']], 6], 1], '#ea580c', // Darker orange
-            ['==', ['%', ['to-number', ['get', 'postcode']], 6], 2], '#ca8a04', // Darker yellow
-            ['==', ['%', ['to-number', ['get', 'postcode']], 6], 3], '#16a34a', // Darker green
-            ['==', ['%', ['to-number', ['get', 'postcode']], 6], 4], '#2563eb', // Darker blue
-            ['==', ['%', ['to-number', ['get', 'postcode']], 6], 5], '#7c3aed', // Darker purple
+            ['==', ['get', 'display_name'], 'Middletown, Middlesex County, Connecticut, United States'], '#dc2626', // Darker red
+            ['in', 'Cromwell', ['get', 'display_name']], '#ea580c', // Darker orange
+            ['in', 'Durham', ['get', 'display_name']], '#ca8a04', // Darker yellow
+            ['in', 'Portland', ['get', 'display_name']], '#16a34a', // Darker green
+            ['in', 'Haddam', ['get', 'display_name']], '#2563eb', // Darker blue
+            ['in', 'East Hampton', ['get', 'display_name']], '#7c3aed', // Darker purple
+            ['in', 'Berlin', ['get', 'display_name']], '#be185d', // Darker pink
+            ['in', 'Higganum', ['get', 'display_name']], '#0891b2', // Darker cyan
             '#4b5563' // Darker gray fallback
           ],
-          'line-width': 2,
-          'line-opacity': 0.8
+          'line-width': 3,
+          'line-opacity': 0.9
         }
       });
 
-      // Add zip code labels
-      if (map.current.getLayer('zip-codes-labels')) {
-        map.current.removeLayer('zip-codes-labels');
+      // Add town name labels
+      if (map.current.getLayer('town-boundaries-labels')) {
+        map.current.removeLayer('town-boundaries-labels');
       }
 
       map.current.addLayer({
-        id: 'zip-codes-labels',
+        id: 'town-boundaries-labels',
         type: 'symbol',
-        source: 'zip-codes',
+        source: 'town-boundaries',
         layout: {
-          'text-field': ['get', 'postcode'],
+          'text-field': [
+            'case',
+            ['in', 'Middletown', ['get', 'display_name']], 'Middletown',
+            ['in', 'Cromwell', ['get', 'display_name']], 'Cromwell', 
+            ['in', 'Durham', ['get', 'display_name']], 'Durham',
+            ['in', 'Portland', ['get', 'display_name']], 'Portland',
+            ['in', 'Haddam', ['get', 'display_name']], 'Haddam',
+            ['in', 'East Hampton', ['get', 'display_name']], 'East Hampton',
+            ['in', 'Berlin', ['get', 'display_name']], 'Berlin',
+            ['in', 'Higganum', ['get', 'display_name']], 'Higganum',
+            ['get', 'name']
+          ],
           'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
-          'text-size': 14,
+          'text-size': 16,
           'text-anchor': 'center'
         },
         paint: {
-          'text-color': '#1f2937',
+          'text-color': '#ffffff',
           'text-halo-color': '#ffffff',
-          'text-halo-width': 2
+          'text-halo-width': 3,
+          'text-halo-blur': 1
         }
       });
 
-      addLog(`Added ${zipData.features.length} zip code boundaries`);
+      addLog(`Added ${zipData.features.length} town boundaries around Middletown, CT`);
       
     } catch (error) {
-      addLog('Failed to load zip code boundaries: ' + (error as Error).message);
+      addLog('Failed to load town boundaries: ' + (error as Error).message);
     }
   };
 
@@ -343,18 +389,18 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSel
     if (map.current) {
       const visibility = showZipCodes ? 'none' : 'visible';
       
-      if (map.current.getLayer('zip-codes-fill')) {
-        map.current.setLayoutProperty('zip-codes-fill', 'visibility', visibility);
+      if (map.current.getLayer('town-boundaries-fill')) {
+        map.current.setLayoutProperty('town-boundaries-fill', 'visibility', visibility);
       }
-      if (map.current.getLayer('zip-codes-border')) {
-        map.current.setLayoutProperty('zip-codes-border', 'visibility', visibility);
+      if (map.current.getLayer('town-boundaries-border')) {
+        map.current.setLayoutProperty('town-boundaries-border', 'visibility', visibility);
       }
-      if (map.current.getLayer('zip-codes-labels')) {
-        map.current.setLayoutProperty('zip-codes-labels', 'visibility', visibility);
+      if (map.current.getLayer('town-boundaries-labels')) {
+        map.current.setLayoutProperty('town-boundaries-labels', 'visibility', visibility);
       }
       
       if (!showZipCodes) {
-        loadZipCodeBoundaries();
+        loadZipCodeBoundaries(); 
       }
     }
   };
@@ -498,7 +544,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSel
             }`}
             title="Toggle zip code boundaries"
           >
-            {showZipCodes ? 'Hide' : 'Show'} Zip Codes
+            {showZipCodes ? 'Hide' : 'Show'} Towns
           </button>
           
           <button
