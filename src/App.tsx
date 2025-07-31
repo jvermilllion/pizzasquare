@@ -10,7 +10,6 @@ function App() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [orders, setOrders] = useState<Order[]>(() => generateMockOrders());
   const [useSquareData, setUseSquareData] = useState(false);
-  const [currentView, setCurrentView] = useState<'dashboard' | 'settings'>('dashboard');
   const [isDrawingMode, setIsDrawingMode] = useState(false);
 
   // Business location from localStorage or default
@@ -25,19 +24,6 @@ function App() {
   // Regenerate mock orders when business location changes
   const refreshMockOrders = () => {
     if (!useSquareData) {
-      setOrders(generateMockOrders());
-    }
-  };
-
-  // Handle Square orders being loaded
-  const handleSquareOrdersLoaded = (squareOrders: Order[]) => {
-    if (squareOrders.length > 0) {
-      setOrders(squareOrders);
-      setUseSquareData(true);
-    }
-  };
-
-  // Update order status
   const handleUpdateOrderStatus = (orderId: string, status: Order['status']) => {
     setOrders(prev => prev.map(order => 
       order.id === orderId 
@@ -60,30 +46,6 @@ function App() {
       
       if (orderIndex === -1) return prev;
       
-      // This is a simplified approach - in a real app you'd want more sophisticated route management
-      // For now, we'll just update the order to indicate it should be in a different route
-      // The actual route grouping logic in DeliveryRoutes.tsx will handle the reorganization
-      
-      return updatedOrders;
-    });
-  };
-
-  // Move order back to queue (unassign from route)
-  const handleMoveOrderToQueue = (orderId: string) => {
-    setOrders(prev => prev.map(order => 
-      order.id === orderId 
-        ? { 
-            ...order, 
-            status: 'ready' as const,
-            // Clear any route-specific properties if they exist
-            driverId: undefined,
-            groupId: undefined
-          }
-        : order
-    ));
-  };
-
-  // Get active orders ready for delivery
   const activeOrders = useMemo(() => {
     return orders.filter(order => 
       order.status === 'ready' || order.status === 'out_for_delivery'
@@ -98,7 +60,6 @@ function App() {
     <div className="min-h-screen bg-gray-100 relative">
       {currentView === 'settings' ? (
         <Settings 
-          onOrdersLoaded={handleSquareOrdersLoaded} 
           onNavigateBack={() => setCurrentView('dashboard')}
         />
       ) : (
@@ -108,38 +69,23 @@ function App() {
             <div className="p-4 border-b border-gray-200 bg-white">
               <h1 className="text-xl font-bold flex items-center text-gray-900">
                 <MapPin className="w-5 h-5 mr-2 text-blue-600" />
-                Delivery Dashboard
+                Pizza Delivery
               </h1>
             </div>
 
             {/* Navigation Tabs */}
-            <div className="p-4 border-b border-gray-200 flex-shrink-0">
+            <div className="p-4 border-b border-gray-200">
               <div className="flex space-x-2">
                 <button
-                  onClick={() => setCurrentView('dashboard')}
-                  className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    currentView === 'dashboard'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  <Map className="w-4 h-4 mr-2" />
-                  Dashboard
-                </button>
-                <button
                   onClick={() => setCurrentView('settings')}
-                  className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    currentView === 'settings'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
+                  className="flex items-center px-3 py-2 rounded-lg text-sm font-medium bg-gray-100 text-gray-600 hover:bg-gray-200"
                 >
                   <SettingsIcon className="w-4 h-4 mr-2" />
                   Settings
                 </button>
                 <button
                   onClick={() => setIsDrawingMode(!isDrawingMode)}
-                  className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                  className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium ${
                     isDrawingMode
                       ? 'bg-orange-600 text-white'
                       : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
