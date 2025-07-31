@@ -3,7 +3,7 @@ import { mockOrders as realOrders, restaurantLocation as defaultRestaurantLocati
 import { Settings } from './components/Settings';
 import { Order } from './types/orders';
 import { DeliveryRoutes } from './components/DeliveryRoutes.tsx';
-import { MapboxMap } from './components/MapboxMap';
+import MapboxMap from './components/MapboxMap';
 import { MapPin, Settings as SettingsIcon, Map } from 'lucide-react';
 
 function App() {
