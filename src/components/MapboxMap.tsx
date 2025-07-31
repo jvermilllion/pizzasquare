@@ -305,6 +305,144 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
     });
   };
 
+  const initializeDrawing = () => {
+    if (!map.current) return;
+
+    // Initialize Mapbox Draw
+    draw.current = new MapboxDraw({
+      displayControlsDefault: false,
+      controls: {
+        polygon: true,
+        trash: true
+      },
+      styles: [
+        // Polygon fill
+        {
+          'id': 'gl-draw-polygon-fill-inactive',
+          'type': 'fill',
+          'filter': ['all', ['==', 'active', 'false'], ['==', '$type', 'Polygon'], ['!=', 'mode', 'static']],
+          'paint': {
+            'fill-color': '#3b82f6',
+            'fill-outline-color': '#3b82f6',
+            'fill-opacity': 0.2
+          }
+        },
+        // Polygon stroke
+        {
+          'id': 'gl-draw-polygon-stroke-inactive',
+          'type': 'line',
+          'filter': ['all', ['==', 'active', 'false'], ['==', '$type', 'Polygon'], ['!=', 'mode', 'static']],
+          'layout': {
+            'line-cap': 'round',
+            'line-join': 'round'
+          },
+          'paint': {
+            'line-color': '#2563eb',
+            'line-width': 3
+          }
+        },
+        // Active polygon fill
+        {
+          'id': 'gl-draw-polygon-fill-active',
+          'type': 'fill',
+          'filter': ['all', ['==', 'active', 'true'], ['==', '$type', 'Polygon']],
+          'paint': {
+            'fill-color': '#f59e0b',
+            'fill-outline-color': '#f59e0b',
+            'fill-opacity': 0.3
+          }
+        },
+        // Active polygon stroke
+        {
+          'id': 'gl-draw-polygon-stroke-active',
+          'type': 'line',
+          'filter': ['all', ['==', 'active', 'true'], ['==', '$type', 'Polygon']],
+          'layout': {
+            'line-cap': 'round',
+            'line-join': 'round'
+          },
+          'paint': {
+            'line-color': '#d97706',
+            'line-width': 3
+          }
+        },
+        // Vertices
+        {
+          'id': 'gl-draw-polygon-and-line-vertex-active',
+          'type': 'circle',
+          'filter': ['all', ['==', 'meta', 'vertex'], ['==', '$type', 'Point']],
+          'paint': {
+            'circle-radius': 6,
+            'circle-color': '#ffffff',
+            'circle-stroke-color': '#f59e0b',
+            'circle-stroke-width': 2
+          }
+        }
+      ]
+    });
+
+    map.current.addControl(draw.current, 'top-left');
+
+    // Handle drawing events
+    map.current.on('draw.create', (e) => {
+      if (e.features && e.features.length > 0) {
+        const polygon = {
+          type: 'FeatureCollection',
+          features: [{
+            type: 'Feature',
+            properties: {
+              name: 'Custom Delivery Area'
+            },
+            geometry: e.features[0].geometry
+          }]
+        };
+        
+        // Save to localStorage
+        saveDeliveryArea(polygon);
+        
+        // Reload the delivery area to show the new polygon
+        loadDeliveryArea();
+        
+        // Clear the drawing
+        draw.current?.deleteAll();
+        
+        // Notify parent component
+        if (onDrawingComplete) {
+          onDrawingComplete(polygon);
+        }
+      }
+    });
+  };
+
+  const toggleDrawingMode = () => {
+    if (!map.current || !draw.current) return;
+
+    if (isDrawingMode) {
+      // Enter drawing mode
+      draw.current.changeMode('draw_polygon');
+      
+      // Hide existing delivery area while drawing
+      const layerIds = ['delivery-area-label', 'delivery-area-border', 'delivery-area-fill'];
+      layerIds.forEach(layerId => {
+        if (map.current!.getLayer(layerId)) {
+          map.current!.setLayoutProperty(layerId, 'visibility', 'none');
+        }
+      });
+    } else {
+      // Exit drawing mode
+      draw.current.changeMode('simple_select');
+      draw.current.deleteAll();
+      
+      // Show existing delivery area
+      const layerIds = ['delivery-area-label', 'delivery-area-border', 'delivery-area-fill'];
+      layerIds.forEach(layerId => {
+        if (map.current!.getLayer(layerId)) {
+          map.current!.setLayoutProperty(layerId, 'visibility', 'visible');
+        }
+      });
+    }
+  };
+
   if (!MAPBOX_TOKEN) {
     return (
       <div className="w-full h-full bg-gray-100 flex items-center justify-center">
