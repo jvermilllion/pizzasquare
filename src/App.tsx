@@ -11,6 +11,7 @@ function App() {
   const [orders, setOrders] = useState<Order[]>(() => generateMockOrders());
   const [isDrawingMode, setIsDrawingMode] = useState(false);
   const [currentView, setCurrentView] = useState<'dashboard' | 'settings'>('dashboard');
+  const [orderView, setOrderView] = useState<'active' | 'all' | 'archived'>('active');
 
   // Business location from localStorage or default
   const businessLocation = useMemo(() => getBusinessLocation(), []);
@@ -28,14 +29,31 @@ function App() {
     ));
   };
 
+  const handleArchiveOrder = (orderId: string) => {
+    setOrders(prev => prev.map(order => 
+      order.id === orderId ? { ...order, status: 'delivered' as const } : order
+    ));
+  };
   const activeOrders = useMemo(() => {
-    return orders.filter(order => 
-      order.status === 'ready' || order.status === 'out_for_delivery'
-    ).sort((a, b) => {
+    if (orderView === 'active') {
+      return orders.filter(order => 
+        order.status === 'ready' || order.status === 'out_for_delivery' || order.status === 'preparing'
+      );
+    } else if (orderView === 'archived') {
+      return orders.filter(order => 
+        order.status === 'delivered' || order.status === 'cancelled'
+      );
+    } else {
+      return orders;
+    }
+  }, [orders, orderView]);
+
+  const displayOrders = useMemo(() => {
+    return activeOrders.sort((a, b) => {
       // Sort by creation time (oldest first)
       return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
     });
-  }, [orders]);
+  }, [activeOrders]);
 
   // Single layout with sidebar and map
   return (
@@ -78,15 +96,52 @@ function App() {
               </div>
             </div>
 
+            {/* Order View Tabs */}
+            <div className="p-4 border-b border-gray-200">
+              <div className="flex space-x-1">
+                <button
+                  onClick={() => setOrderView('active')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                    orderView === 'active'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  Active ({orders.filter(o => ['ready', 'out_for_delivery', 'preparing'].includes(o.status)).length})
+                </button>
+                <button
+                  onClick={() => setOrderView('all')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                    orderView === 'all'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  All ({orders.length})
+                </button>
+                <button
+                  onClick={() => setOrderView('archived')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium ${
+                    orderView === 'archived'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  Archived ({orders.filter(o => ['delivered', 'cancelled'].includes(o.status)).length})
+                </button>
+              </div>
+            </div>
             {/* Delivery Routes */}
             <div className="flex-1 overflow-y-auto">
               <div className="p-4">
                 <DeliveryRoutes 
-                  orders={activeOrders}
+                  orders={displayOrders}
                   selectedOrder={selectedOrder}
                   onUpdateOrderStatus={handleUpdateOrderStatus}
+                  onArchiveOrder={handleArchiveOrder}
                   onOrderSelect={setSelectedOrder}
                   businessLocation={businessLocation}
+                  viewMode={orderView}
                 />
               </div>
             </div>
@@ -95,7 +150,7 @@ function App() {
           {/* Main Content */}
           <div className="fixed top-0 right-0 bottom-0 bg-white" style={{ left: '320px' }}>
               <MapboxMap 
-                orders={activeOrders} 
+                orders={orderView === 'active' ? displayOrders : []} 
                 selectedOrder={selectedOrder}
                 onOrderSelect={setSelectedOrder}
                 isDrawingMode={isDrawingMode}
