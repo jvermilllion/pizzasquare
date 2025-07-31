@@ -80,33 +80,3 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
     </div>
   );
 };
-                  <div className="flex items-center text-sm text-gray-500">
-                    <Clock className="w-4 h-4 mr-1" />
-                    {formatDistanceToNow(new Date(order.createdAt), { addSuffix: true })}
-                  </div>
-                </div>
-
-                {/* Footer */}
-                <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                  <div></div>
-                  {nextStatus && (
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onUpdateOrderStatus(order.id, nextStatus);
-                      }}
-                      className="flex items-center px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors"
-                    >
-                      <CheckCircle className="w-3 h-3 mr-1" />
-                      Mark {getStatusLabel(nextStatus)}
-                    </button>
-                  )}
-                </div>
-              </div>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-};
