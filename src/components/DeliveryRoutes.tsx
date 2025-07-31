@@ -16,7 +16,7 @@ interface DeliveryRoutesProps {
 export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({ 
   orders, 
   selectedOrder,
-  onOrderSelect
+  onOrderSelect,
   onArchiveOrder,
   viewMode
 }) => {
