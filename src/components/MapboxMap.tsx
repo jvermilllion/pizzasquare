@@ -265,6 +265,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         box-shadow: 0 2px 4px rgba(0,0,0,0.2);
         user-select: none;
         transition: all 0.2s ease;
+        transform-origin: center center;
       `;
       orderEl.textContent = (index + 1).toString();
       
