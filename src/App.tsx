@@ -146,14 +146,12 @@ function App() {
           </div>
 
           {/* Main Content */}
-          <div className="ml-80 h-screen">
-            <div className="w-full h-full bg-white">
+          <div className="ml-80 h-screen bg-white">
               <MapboxMap 
                 orders={activeOrders} 
                 selectedOrder={selectedOrder}
                 onOrderSelect={setSelectedOrder}
               />
-            </div>
           </div>
         </>
       )}
