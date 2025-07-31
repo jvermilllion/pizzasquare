@@ -210,8 +210,11 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSel
       // Restaurant marker
       const restaurantEl = document.createElement('div');
       restaurantEl.innerHTML = '🍕';
-      restaurantEl.style.fontSize = '24px';
-      restaurantEl.style.cursor = 'pointer';
+      restaurantEl.style.cssText = `
+        font-size: 24px;
+        cursor: pointer;
+        user-select: none;
+      `;
 
       new mapboxgl.Marker({ element: restaurantEl })
         .setLngLat([businessLocation.lng, businessLocation.lat])
@@ -240,21 +243,48 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSel
           font-weight: bold;
           cursor: pointer;
           box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+          user-select: none;
         `;
         orderEl.textContent = (index + 1).toString();
 
-        orderEl.addEventListener('click', () => onOrderSelect(order));
-
-        new mapboxgl.Marker({ element: orderEl })
+        // Create the marker with popup
+        const marker = new mapboxgl.Marker({ element: orderEl })
           .setLngLat([order.deliveryLocation.lng, order.deliveryLocation.lat])
           .setPopup(new mapboxgl.Popup({ offset: 15 }).setHTML(`
-            <div style="padding: 8px;">
-              <strong>${order.customerName}</strong><br>
-              $${order.totalAmount.toFixed(2)}<br>
-              <small>${order.deliveryAddress}</small>
+            <div style="padding: 12px; min-width: 200px;">
+              <div style="font-weight: bold; font-size: 14px; margin-bottom: 8px; color: #1f2937;">
+                ${order.customerName}
+              </div>
+              <div style="margin-bottom: 6px; color: #374151;">
+                <strong>Total:</strong> $${order.totalAmount.toFixed(2)}
+              </div>
+              <div style="margin-bottom: 6px; color: #374151;">
+                <strong>Status:</strong> ${order.status.replace('_', ' ').toUpperCase()}
+              </div>
+              <div style="margin-bottom: 6px; color: #374151;">
+                <strong>Items:</strong> ${order.items.length} item${order.items.length !== 1 ? 's' : ''}
+              </div>
+              <div style="font-size: 12px; color: #6b7280; line-height: 1.4;">
+                ${order.deliveryAddress}
+              </div>
+              ${order.specialInstructions ? `
+                <div style="margin-top: 8px; padding: 6px; background: #fef3c7; border: 1px solid #f59e0b; border-radius: 4px; font-size: 11px; color: #92400e;">
+                  <strong>Instructions:</strong> ${order.specialInstructions}
+                </div>
+              ` : ''}
             </div>
           `))
           .addTo(map.current!);
+
+        // Add click handler that doesn't interfere with popup
+        orderEl.addEventListener('click', (e) => {
+          e.stopPropagation();
+          onOrderSelect(order);
+          // Small delay to allow popup to show first
+          setTimeout(() => {
+            marker.getPopup()?.addTo(map.current!);
+          }, 100);
+        });
       });
 
       addLog(`Added ${orders.length + 1} markers to map`);
