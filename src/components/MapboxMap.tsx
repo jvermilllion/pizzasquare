@@ -229,7 +229,10 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSel
           </div>
         `))
         .addTo(map.current);
-
+    } catch (markerError) {
+      addError('Failed to add markers', markerError);
+    }
+  };
 
   const retryMap = () => {
     setRetryCount(0);
