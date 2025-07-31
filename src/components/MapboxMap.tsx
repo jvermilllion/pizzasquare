@@ -179,8 +179,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSel
       const styles = [
         'mapbox://styles/mapbox/streets-v12',
         'mapbox://styles/mapbox/streets-v11', 
-        'mapbox://styles/mapbox/streets-v9',
-        'mapbox://styles/mapbox/basic-v9'
+        'Jefferson, MD'
       ];
       
       const currentStyle = styles[Math.min(retryCount, styles.length - 1)];
@@ -309,7 +308,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSel
             ['in', 'Middletown', ['get', 'display_name']], '#ef4444', // Red for Middletown
             ['in', 'Myersville', ['get', 'display_name']], '#eab308', // Yellow for Myersville
             ['in', 'Jefferson', ['get', 'display_name']], '#3b82f6', // Blue for Jefferson
-            ['in', 'Boonsboro', ['get', 'display_name']], '#22c55e', // Green for Boonsboro
             '#6b7280' // Gray fallback
           ],
           'fill-opacity': 0.3
@@ -328,7 +326,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSel
             ['in', 'Middletown', ['get', 'display_name']], '#dc2626', // Darker red
             ['in', 'Myersville', ['get', 'display_name']], '#ca8a04', // Darker yellow
             ['in', 'Jefferson', ['get', 'display_name']], '#2563eb', // Darker blue
-            ['in', 'Boonsboro', ['get', 'display_name']], '#16a34a', // Darker green
             '#4b5563' // Darker gray fallback
           ],
           'line-width': 3,
@@ -348,7 +345,6 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSel
             ['in', 'Middletown', ['get', 'display_name']], 'Middletown',
             ['in', 'Myersville', ['get', 'display_name']], 'Myersville',
             ['in', 'Jefferson', ['get', 'display_name']], 'Jefferson',
-            ['in', 'Boonsboro', ['get', 'display_name']], 'Boonsboro',
             ['get', 'name']
           ],
           'text-font': ['Open Sans Bold', 'Arial Unicode MS Bold'],
