@@ -66,6 +66,23 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
     }
     updateDiagnostic('Token Format', 'success', 'Token format is valid');
 
+    // Check 2.5: Token Validation via API
+    try {
+      const response = await fetch(`https://api.mapbox.com/tokens/v2?access_token=${token}`);
+      if (!response.ok) {
+        updateDiagnostic('Token Format', 'error', 'Token validation failed', 
+          `HTTP ${response.status}: Token may be invalid or expired`);
+        return;
+      }
+      const tokenInfo = await response.json();
+      updateDiagnostic('Token Format', 'success', 
+        `Token valid - Scopes: ${tokenInfo.scopes?.join(', ') || 'Unknown'}`);
+    } catch (error) {
+      updateDiagnostic('Token Format', 'error', 'Token validation failed', 
+        'Cannot verify token with Mapbox API');
+      // Continue anyway - might be network issue
+    }
+
     // Check 3: Container Element
     await new Promise(resolve => setTimeout(resolve, 100)); // Wait for DOM
     if (!mapContainer.current) {
@@ -94,9 +111,10 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
 
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/navigation-day-v1',
+        style: 'mapbox://styles/mapbox/streets-v12', // Try simpler style first
         center: [restaurantLocation.lng, restaurantLocation.lat],
-        zoom: 11.5
+        zoom: 11.5,
+        accessToken: token // Explicitly set token
       });
 
       updateDiagnostic('Map Initialization', 'success', 'Map instance created');
@@ -112,8 +130,21 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
 
       map.current.on('error', (e) => {
         console.error('Mapbox error:', e);
-        const errorMsg = e.error?.message || 'Unknown map error';
+        const errorMsg = e.error?.message || e.message || 'Unknown map error';
         updateDiagnostic('Style Loading', 'error', 'Failed to load map style', errorMsg);
+        
+        // Try fallback style
+        if (map.current && !e.error?.message?.includes('streets-v11')) {
+          setTimeout(() => {
+            updateDiagnostic('Style Loading', 'pending', 'Trying fallback style...');
+            map.current?.setStyle('mapbox://styles/mapbox/streets-v11');
+          }, 1000);
+        }
+      });
+
+      map.current.on('styleimagemissing', (e) => {
+        console.warn('Style image missing:', e.id);
+        // Continue - this is not critical
       });
 
     } catch (error) {
