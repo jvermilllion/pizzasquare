@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Order } from '../types/orders';
-import { AlertTriangle, CheckCircle, XCircle, Clock, RefreshCw } from 'lucide-react';
+import { AlertTriangle, CheckCircle, XCircle, RefreshCw } from 'lucide-react';
 
 // Set Mapbox access token
 const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || '';
@@ -57,6 +57,12 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSel
       }
     };
   }, []);
+
+  useEffect(() => {
+    if (map.current && success) {
+      updateMarkers();
+    }
+  }, [orders, selectedOrder, success]);
 
   const initializeMap = async () => {
     try {
@@ -155,7 +161,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSel
         addLog('✅ Map loaded successfully!');
         setSuccess(true);
         setRetryCount(0); // Reset retry count on success
-        addMarkersToMap();
+        updateMarkers();
       });
 
       map.current.on('error', (e) => {
@@ -205,35 +211,121 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSel
     }
   };
 
-  const addMarkersToMap = () => {
+  const updateMarkers = () => {
     if (!map.current) return;
 
-    addLog('Adding markers to map...');
+    addLog('Updating markers on map...');
 
     try {
+      // Clear existing markers
+      markers.current.forEach(marker => marker.remove());
+      markers.current = [];
+
       // Restaurant marker
       const restaurantEl = document.createElement('div');
-      restaurantEl.innerHTML = '🍕';
+      restaurantEl.innerHTML = '🏪';
       restaurantEl.style.cssText = `
-        font-size: 24px;
+        font-size: 28px;
         cursor: pointer;
         user-select: none;
+        filter: drop-shadow(2px 2px 4px rgba(0,0,0,0.3));
+        transition: transform 0.2s;
       `;
+      restaurantEl.addEventListener('mouseenter', () => {
+        restaurantEl.style.transform = 'scale(1.1)';
+      });
+      restaurantEl.addEventListener('mouseleave', () => {
+        restaurantEl.style.transform = 'scale(1)';
+      });
 
-      new mapboxgl.Marker({ element: restaurantEl })
+      const restaurantMarker = new mapboxgl.Marker({ element: restaurantEl })
         .setLngLat([businessLocation.lng, businessLocation.lat])
         .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(`
-          <div style="padding: 8px;">
-            <strong>${businessLocation.name}</strong><br>
-            ${businessLocation.address}
+          <div style="padding: 12px; min-width: 200px;">
+            <h3 style="margin: 0 0 8px 0; color: #1f2937; font-weight: bold;">${businessLocation.name}</h3>
+            <p style="margin: 0; color: #6b7280; font-size: 14px;">${businessLocation.address}</p>
           </div>
         `))
         .addTo(map.current);
+
+      markers.current.push(restaurantMarker);
+
+      // Order markers
+      orders.forEach((order, index) => {
+        const isSelected = selectedOrder?.id === order.id;
+        
+        const orderEl = document.createElement('div');
+        orderEl.style.cssText = `
+          width: 32px;
+          height: 32px;
+          background: ${isSelected ? '#f59e0b' : '#3b82f6'};
+          color: white;
+          border-radius: 50%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-weight: bold;
+          font-size: 14px;
+          cursor: pointer;
+          border: 2px solid white;
+          box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+          transition: all 0.2s;
+          user-select: none;
+        `;
+        orderEl.textContent = (index + 1).toString();
+        
+        // Hover effects
+        orderEl.addEventListener('mouseenter', () => {
+          orderEl.style.transform = 'scale(1.1)';
+          orderEl.style.zIndex = '1000';
+        });
+        orderEl.addEventListener('mouseleave', () => {
+          orderEl.style.transform = 'scale(1)';
+          orderEl.style.zIndex = '1';
+        });
+
+        // Click handler
+        orderEl.addEventListener('click', (e) => {
+          e.stopPropagation();
+          onOrderSelect(order);
+        });
+
+        const orderMarker = new mapboxgl.Marker({ element: orderEl })
+          .setLngLat([order.deliveryLocation.lng, order.deliveryLocation.lat])
+          .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(`
+            <div style="padding: 12px; min-width: 250px;">
+              <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 8px;">
+                <h3 style="margin: 0; color: #1f2937; font-weight: bold;">${order.customerName}</h3>
+                <span style="background: #3b82f6; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: bold;">
+                  #${index + 1}
+                </span>
+              </div>
+              <div style="margin-bottom: 8px;">
+                <strong style="color: #059669;">$${order.totalAmount.toFixed(2)}</strong>
+                <span style="color: #6b7280; margin-left: 8px;">${order.items.length} item${order.items.length > 1 ? 's' : ''}</span>
+              </div>
+              <div style="margin-bottom: 8px; color: #374151; font-size: 14px;">
+                📍 ${order.deliveryAddress}
+              </div>
+              <div style="color: #6b7280; font-size: 12px;">
+                📞 ${order.customerPhone}
+              </div>
+              ${order.specialInstructions ? `
+                <div style="margin-top: 8px; padding: 6px; background: #fef3c7; border-radius: 4px; font-size: 12px;">
+                  <strong>Note:</strong> ${order.specialInstructions}
+                </div>
+              ` : ''}
+            </div>
+          `))
+          .addTo(map.current);
+
+        markers.current.push(orderMarker);
+      });
+
+      addLog(`Added ${markers.current.length} markers to map`);
+
     } catch (markerError) {
-      addError('Failed to add markers', markerError);
-    }
-    finally {
-      // Ensure cleanup is performed regardless of success or failure
+      addError('Failed to update markers', markerError);
     }
   };
 
@@ -251,6 +343,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSel
             <>
               <CheckCircle className="w-5 h-5 text-green-500" />
               <span className="text-sm font-medium text-green-700">Map loaded successfully</span>
+              <span className="text-xs text-gray-500">({orders.length} orders)</span>
             </>
           ) : error ? (
             <>

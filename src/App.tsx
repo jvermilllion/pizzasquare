@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { mockOrders as realOrders, restaurantLocation as defaultRestaurantLocation } from './data/realData';
 import { Settings } from './components/Settings';
 import { Order } from './types/orders';
-import { DeliveryRoutes } from './components/DeliveryRoutes.tsx';
+import { DeliveryRoutes } from './components/DeliveryRoutes';
 import MapboxMap from './components/MapboxMap';
 import { MapPin, Settings as SettingsIcon, Map } from 'lucide-react';
 
@@ -142,13 +142,7 @@ function App() {
                   selectedOrder={selectedOrder}
                   onUpdateOrderStatus={handleUpdateOrderStatus}
                   onOrderSelect={setSelectedOrder}
-                  onMoveOrderBetweenRoutes={handleMoveOrderBetweenRoutes}
-                  onMoveOrderToQueue={handleMoveOrderToQueue}
                   businessLocation={businessLocation}
-                  onArchiveRoute={(routeId) => {
-                    console.log('Archived route:', routeId);
-                    // Could save to localStorage or send to backend
-                  }}
                 />
               </div>
             </div>
