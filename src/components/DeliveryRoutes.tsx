@@ -125,44 +125,15 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
                     <Phone className="w-4 h-4 mr-1" />
                     {order.customerPhone}
                   </div>
-                  <div className="flex items-center text-sm text-gray-600">
-                    <MapPin className="w-4 h-4 mr-1" />
-                    <span className="truncate flex-1">{order.deliveryAddress}</span>
-                    {order.distance && (
-                      <span className="ml-2 font-medium text-blue-600">{order.distance}</span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Order Items Summary */}
-                <div className="mb-2">
-                  <div className="text-sm text-gray-600">
-                    <div className="flex justify-between">
-                      <span>{order.items.length} item{order.items.length > 1 ? 's' : ''}</span>
-                      <span>{order.items.slice(0, 2).map(item => `${item.quantity}x ${item.name}`).join(', ')}</span>
-                    </div>
-                    {order.items.length > 2 && (
-                      <div className="text-xs text-gray-500 mt-1">
-                        +{order.items.length - 2} more items...
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Special Instructions */}
-                {order.specialInstructions && (
-                  <div className="mb-2 p-2 bg-yellow-50 border border-yellow-200 rounded text-sm">
-                    <strong className="text-yellow-800">Note:</strong> {order.specialInstructions}
-                  </div>
-                )}
-
-                {/* Footer */}
-                <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                  <div className="flex items-center text-xs text-gray-500">
+                  <div className="flex items-center text-sm text-gray-500">
                     <Clock className="w-4 h-4 mr-1" />
                     {formatDistanceToNow(new Date(order.createdAt), { addSuffix: true })}
                   </div>
-                  
+                </div>
+
+                {/* Footer */}
+                <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                  <div></div>
                   {nextStatus && (
                     <button
                       onClick={(e) => {
