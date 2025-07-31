@@ -146,7 +146,7 @@ function App() {
           </div>
 
           {/* Main Content */}
-          <div className="absolute left-80 top-0 right-0 h-screen bg-white">
+          <div className="absolute top-0 h-screen bg-white" style={{ left: '320px', width: 'calc(100vw - 320px)' }}>
               <MapboxMap 
                 orders={activeOrders} 
                 selectedOrder={selectedOrder}
