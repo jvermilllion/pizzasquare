@@ -20,6 +20,7 @@ interface MapboxMapProps {
   };
 }
 
+const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSelect, businessLocation }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
   const [diagnostics, setDiagnostics] = useState<string[]>([]);
@@ -129,7 +130,7 @@ interface MapboxMapProps {
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
         style: currentStyle,
-        center: [restaurantLocation.lng, restaurantLocation.lat],
+        center: [businessLocation.lng, businessLocation.lat],
         zoom: 12,
         accessToken: MAPBOX_TOKEN,
         attributionControl: false,
@@ -311,15 +312,15 @@ interface MapboxMapProps {
       {/* Detailed Diagnostics Panel */}
       {showDiagnostics && (
         <div className="absolute top-20 left-4 z-20 bg-white rounded-lg shadow-lg p-4 max-w-md max-h-96 overflow-y-auto">
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-bold text-gray-900">Detailed Diagnostics</h3>
-          <button
-            onClick={() => setShowDiagnostics(false)}
-            className="text-gray-400 hover:text-gray-600"
-          >
-            ✕
-          </button>
-        </div>
+          <div className="flex items-center justify-between mb-3">
+            <h3 className="font-bold text-gray-900">Detailed Diagnostics</h3>
+            <button
+              onClick={() => setShowDiagnostics(false)}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              ✕
+            </button>
+          </div>
 
           <div className="mb-3">
             <div className="text-sm font-medium text-gray-900 mb-1">Current Status:</div>
@@ -394,3 +395,5 @@ interface MapboxMapProps {
     </div>
   );
 };
+
+export default MapboxMap;
