@@ -106,13 +106,10 @@ function App() {
           {/* Sidebar */}
           <div className="fixed left-0 top-0 w-80 h-screen bg-white shadow-lg overflow-hidden border-r border-gray-200 z-10 flex flex-col">
             <div className="p-4 border-b border-gray-200 bg-white">
-              <h1 className="text-xl font-bold mb-2 flex items-center text-gray-900">
+              <h1 className="text-xl font-bold flex items-center text-gray-900">
                 <MapPin className="w-5 h-5 mr-2 text-blue-600" />
-                🍕 Pizza Delivery Routes
+                Delivery Dashboard
               </h1>
-              <p className="text-gray-600 text-sm">
-                {useSquareData ? 'Live Square orders' : 'Demo data'} • Active orders grouped by 45min routes
-              </p>
             </div>
 
             {/* Navigation Tabs */}
