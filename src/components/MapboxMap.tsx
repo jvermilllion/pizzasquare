@@ -23,6 +23,7 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean>(false);
   const [retryCount, setRetryCount] = useState<number>(0);
+  const [showDiagnostics, setShowDiagnostics] = useState<boolean>(false);
   const maxRetries = 3;
 
   const addLog = (message: string) => {
@@ -264,60 +265,91 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
 
   return (
     <div className="relative w-full h-full">
-      {/* Diagnostics Panel */}
-      <div className="absolute top-4 left-4 z-20 bg-white rounded-lg shadow-lg p-4 max-w-md max-h-96 overflow-y-auto">
+      {/* Status Indicator Bar */}
+      <div className="absolute top-4 left-4 right-4 z-20 flex items-center justify-between">
+        <div className="bg-white rounded-lg shadow-lg p-3 flex items-center space-x-3">
+          {success ? (
+            <>
+              <CheckCircle className="w-5 h-5 text-green-500" />
+              <span className="text-sm font-medium text-green-700">Map loaded successfully</span>
+            </>
+          ) : error ? (
+            <>
+              <XCircle className="w-5 h-5 text-red-500" />
+              <span className="text-sm font-medium text-red-700">Map failed to load</span>
+              <button
+                onClick={retryMap}
+                className="ml-2 px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700 flex items-center"
+              >
+                <RefreshCw className="w-3 h-3 mr-1" />
+                Retry
+              </button>
+            </>
+          ) : (
+            <>
+              <RefreshCw className="w-5 h-5 text-blue-500 animate-spin" />
+              <span className="text-sm font-medium text-blue-700">Loading map...</span>
+              <span className="text-xs text-gray-500">({retryCount + 1}/{maxRetries + 1})</span>
+            </>
+          )}
+        </div>
+        
+        {/* Toggle Diagnostics */}
+        <button
+          onClick={() => setShowDiagnostics(!showDiagnostics)}
+          className="bg-white rounded-lg shadow-lg p-2 text-gray-600 hover:text-gray-800"
+          title="Toggle diagnostics"
+        >
+          <AlertTriangle className="w-5 h-5" />
+        </button>
+      </div>
+
+      {/* Detailed Diagnostics Panel */}
+      {showDiagnostics && (
+        <div className="absolute top-20 left-4 z-20 bg-white rounded-lg shadow-lg p-4 max-w-md max-h-96 overflow-y-auto">
         <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center">
-            {success ? (
-              <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
-            ) : error ? (
-              <XCircle className="w-5 h-5 text-red-500 mr-2" />
-            ) : (
-              <Clock className="w-5 h-5 text-yellow-500 mr-2 animate-spin" />
-            )}
-            <h3 className="font-bold text-gray-900">Map Diagnostics</h3>
-          </div>
+          <h3 className="font-bold text-gray-900">Detailed Diagnostics</h3>
           <button
-            onClick={retryMap}
-            className="p-1 text-gray-500 hover:text-gray-700"
-            title="Retry map loading"
+            onClick={() => setShowDiagnostics(false)}
+            className="text-gray-400 hover:text-gray-600"
           >
-            <RefreshCw className="w-4 h-4" />
+            ✕
           </button>
         </div>
 
-        <div className="mb-3">
-          <div className="text-sm font-medium text-gray-900 mb-1">Current Status:</div>
-          <div className={`text-sm ${success ? 'text-green-600' : error ? 'text-red-600' : 'text-yellow-600'}`}>
-            {currentStep}
-          </div>
-        </div>
-
-        <div className="space-y-1">
-          <div className="text-xs font-medium text-gray-700 mb-2">Debug Log:</div>
-          {diagnostics.slice(-8).map((log, index) => (
-            <div key={index} className="text-xs text-gray-600 font-mono bg-gray-50 p-1 rounded">
-              {log}
-            </div>
-          ))}
-        </div>
-
-        {error && (
-          <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded text-xs">
-            <strong className="text-red-800">Error Details:</strong>
-            <div className="text-red-700 mt-1">{error}</div>
-          </div>
-        )}
-
-        {success && (
-          <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded text-xs">
-            <strong className="text-green-800">Success!</strong>
-            <div className="text-green-700 mt-1">
-              Map loaded with {orders.length} delivery locations
+          <div className="mb-3">
+            <div className="text-sm font-medium text-gray-900 mb-1">Current Status:</div>
+            <div className={`text-sm ${success ? 'text-green-600' : error ? 'text-red-600' : 'text-yellow-600'}`}>
+              {currentStep}
             </div>
           </div>
-        )}
-      </div>
+
+          <div className="space-y-1">
+            <div className="text-xs font-medium text-gray-700 mb-2">Debug Log:</div>
+            {diagnostics.slice(-8).map((log, index) => (
+              <div key={index} className="text-xs text-gray-600 font-mono bg-gray-50 p-1 rounded">
+                {log}
+              </div>
+            ))}
+          </div>
+
+          {error && (
+            <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded text-xs">
+              <strong className="text-red-800">Error Details:</strong>
+              <div className="text-red-700 mt-1">{error}</div>
+            </div>
+          )}
+
+          {success && (
+            <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded text-xs">
+              <strong className="text-green-800">Success!</strong>
+              <div className="text-green-700 mt-1">
+                Map loaded with {orders.length} delivery locations
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Map Container */}
       <div 
@@ -330,9 +362,28 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
       {!success && !error && (
         <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
           <div className="text-center">
-            <Clock className="w-8 h-8 text-blue-500 animate-spin mx-auto mb-2" />
+            <RefreshCw className="w-12 h-12 text-blue-500 animate-spin mx-auto mb-4" />
             <div className="text-gray-600 font-medium">Loading map...</div>
             <div className="text-gray-500 text-sm mt-1">{currentStep}</div>
+            <div className="text-xs text-gray-400 mt-2">Attempt {retryCount + 1} of {maxRetries + 1}</div>
+          </div>
+        </div>
+      )}
+
+      {/* Error overlay with retry */}
+      {error && (
+        <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
+          <div className="text-center max-w-md p-6">
+            <XCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+            <div className="text-gray-800 font-medium mb-2">Map failed to load</div>
+            <div className="text-gray-600 text-sm mb-4">{error}</div>
+            <button
+              onClick={retryMap}
+              className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center mx-auto"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Try Again
+            </button>
           </div>
         </div>
       )}
