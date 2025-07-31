@@ -23,16 +23,16 @@ const getDeliveryAreaPolygon = () => {
         coordinates: [[
           // Northern boundary (along Route 40 above Myersville)
           [-77.6200, 39.5100], // Northwest corner
-          [-77.4800, 39.5100], // Northeast corner
+          [-77.5200, 39.5100], // Northeast corner (Route 70 area)
           
-          // Eastern boundary (South Mountain ridge)
-          [-77.4600, 39.4800],
-          [-77.4400, 39.4500],
-          [-77.4200, 39.4200],
-          [-77.4100, 39.3900],
+          // Eastern boundary (Route 70 and Jefferson Pike)
+          [-77.5150, 39.4800], // Route 70 corridor
+          [-77.5100, 39.4500], // Jefferson Pike area
+          [-77.5050, 39.4200], // Jefferson Pike continues
+          [-77.5000, 39.3900], // Jefferson Pike south
           
           // Southern boundary (Route 340 through Jefferson/Burkittsville)
-          [-77.4200, 39.3600], // Southeast corner
+          [-77.5000, 39.3600], // Southeast corner (Jefferson Pike/340 intersection)
           [-77.6000, 39.3600], // Southwest corner
           
           // Western boundary (mountain ridge)
