@@ -269,8 +269,17 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSel
         type: 'fill',
         source: 'zip-codes',
         paint: {
-          'fill-color': '#3b82f6',
-          'fill-opacity': 0.1
+          'fill-color': [
+            'case',
+            ['==', ['%', ['to-number', ['get', 'postcode']], 6], 0], '#ef4444', // Red
+            ['==', ['%', ['to-number', ['get', 'postcode']], 6], 1], '#f97316', // Orange  
+            ['==', ['%', ['to-number', ['get', 'postcode']], 6], 2], '#eab308', // Yellow
+            ['==', ['%', ['to-number', ['get', 'postcode']], 6], 3], '#22c55e', // Green
+            ['==', ['%', ['to-number', ['get', 'postcode']], 6], 4], '#3b82f6', // Blue
+            ['==', ['%', ['to-number', ['get', 'postcode']], 6], 5], '#8b5cf6', // Purple
+            '#6b7280' // Gray fallback
+          ],
+          'fill-opacity': 0.25
         }
       });
 
@@ -284,9 +293,18 @@ const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSel
         type: 'line',
         source: 'zip-codes',
         paint: {
-          'line-color': '#3b82f6',
+          'line-color': [
+            'case',
+            ['==', ['%', ['to-number', ['get', 'postcode']], 6], 0], '#dc2626', // Darker red
+            ['==', ['%', ['to-number', ['get', 'postcode']], 6], 1], '#ea580c', // Darker orange
+            ['==', ['%', ['to-number', ['get', 'postcode']], 6], 2], '#ca8a04', // Darker yellow
+            ['==', ['%', ['to-number', ['get', 'postcode']], 6], 3], '#16a34a', // Darker green
+            ['==', ['%', ['to-number', ['get', 'postcode']], 6], 4], '#2563eb', // Darker blue
+            ['==', ['%', ['to-number', ['get', 'postcode']], 6], 5], '#7c3aed', // Darker purple
+            '#4b5563' // Darker gray fallback
+          ],
           'line-width': 2,
-          'line-opacity': 0.6
+          'line-opacity': 0.8
         }
       });
 
