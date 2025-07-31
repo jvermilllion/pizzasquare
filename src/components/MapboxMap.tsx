@@ -22,6 +22,8 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
   const [currentStep, setCurrentStep] = useState<string>('Starting diagnostics...');
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean>(false);
+  const [retryCount, setRetryCount] = useState<number>(0);
+  const maxRetries = 3;
 
   const addLog = (message: string) => {
     console.log(`[MapboxMap] ${message}`);
@@ -53,7 +55,7 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
       setSuccess(false);
 
       // Step 1: Check token
-      addLog('Step 1: Checking Mapbox token...');
+      addLog(`Step 1: Checking Mapbox token... (Attempt ${retryCount + 1}/${maxRetries + 1})`);
       if (!MAPBOX_TOKEN) {
         addError('No VITE_MAPBOX_TOKEN found in environment variables');
         return;
@@ -108,12 +110,25 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
       // Step 5: Create map with minimal config
       addLog('Step 5: Creating map instance...');
       
+      // Try the most basic style first
+      const styles = [
+        'mapbox://styles/mapbox/streets-v12',
+        'mapbox://styles/mapbox/streets-v11', 
+        'mapbox://styles/mapbox/streets-v9',
+        'mapbox://styles/mapbox/basic-v9'
+      ];
+      
+      const currentStyle = styles[Math.min(retryCount, styles.length - 1)];
+      addLog(`Using style: ${currentStyle}`);
+
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/streets-v11', // Using older, more stable style
+        style: currentStyle,
         center: [restaurantLocation.lng, restaurantLocation.lat],
         zoom: 12,
-        accessToken: MAPBOX_TOKEN
+        accessToken: MAPBOX_TOKEN,
+        attributionControl: false,
+        logoPosition: 'bottom-right'
       });
 
       addLog('Map instance created');
@@ -121,36 +136,62 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
       // Step 6: Wait for map to load
       addLog('Step 6: Waiting for map to load...');
       
+      let loadTimeout: NodeJS.Timeout;
+      let loadEventFired = false;
+      
       map.current.on('load', () => {
+        loadEventFired = true;
+        clearTimeout(loadTimeout);
         addLog('✅ Map loaded successfully!');
         setSuccess(true);
+        setRetryCount(0); // Reset retry count on success
         addMarkersToMap();
       });
 
       map.current.on('error', (e) => {
+        loadEventFired = true;
+        clearTimeout(loadTimeout);
         const errorMsg = e.error?.message || e.message || 'Unknown map error';
         addError(`Map error: ${errorMsg}`, e);
         
-        // Try even simpler style
-        if (map.current && !errorMsg.includes('streets-v9')) {
-          addLog('Trying fallback style: streets-v9...');
+        // Retry with different style if we haven't exceeded max retries
+        if (retryCount < maxRetries) {
+          addLog(`Retrying with different style in 2 seconds...`);
           setTimeout(() => {
-            if (map.current) {
-              map.current.setStyle('mapbox://styles/mapbox/streets-v9');
-            }
-          }, 1000);
+            setRetryCount(prev => prev + 1);
+            initializeMap();
+          }, 2000);
         }
       });
 
-      // Timeout after 10 seconds
-      setTimeout(() => {
-        if (!success && !error) {
-          addError('Map loading timed out after 10 seconds');
+      // More aggressive timeout with retry logic
+      loadTimeout = setTimeout(() => {
+        if (!loadEventFired && !success && !error) {
+          if (retryCount < maxRetries) {
+            addLog(`Loading timeout, retrying... (${retryCount + 1}/${maxRetries})`);
+            if (map.current) {
+              map.current.remove();
+              map.current = null;
+            }
+            setRetryCount(prev => prev + 1);
+            setTimeout(() => initializeMap(), 1000);
+          } else {
+            addError(`Map loading failed after ${maxRetries + 1} attempts`);
+          }
         }
-      }, 10000);
+      }, 8000); // Reduced timeout for faster retries
 
     } catch (initError) {
       addError('Failed to initialize map', initError);
+      
+      // Retry on initialization error
+      if (retryCount < maxRetries) {
+        addLog(`Initialization error, retrying in 2 seconds...`);
+        setTimeout(() => {
+          setRetryCount(prev => prev + 1);
+          initializeMap();
+        }, 2000);
+      }
     }
   };
 
@@ -217,6 +258,7 @@ export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onO
   };
 
   const retryMap = () => {
+    setRetryCount(0);
     initializeMap();
   };
 
