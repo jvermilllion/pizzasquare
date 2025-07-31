@@ -3,10 +3,11 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { Order } from '../types/orders';
 import { restaurantLocation } from '../data/realData';
-import { AlertTriangle, CheckCircle, XCircle, Clock } from 'lucide-react';
+import { AlertTriangle, CheckCircle, XCircle, Clock, RefreshCw } from 'lucide-react';
 
 // Set Mapbox access token
-mapboxgl.accessToken = import.meta.env.VITE_MAPBOX_TOKEN || '';
+const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || '';
+mapboxgl.accessToken = MAPBOX_TOKEN;
 
 interface MapboxMapProps {
   orders: Order[];
@@ -14,258 +15,285 @@ interface MapboxMapProps {
   onOrderSelect: (order: Order | null) => void;
 }
 
-interface DiagnosticCheck {
-  name: string;
-  status: 'pending' | 'success' | 'error';
-  message: string;
-  details?: string;
-}
-
 export const MapboxMap: React.FC<MapboxMapProps> = ({ orders, selectedOrder, onOrderSelect }) => {
   const mapContainer = useRef<HTMLDivElement>(null);
   const map = useRef<mapboxgl.Map | null>(null);
-  const [diagnostics, setDiagnostics] = useState<DiagnosticCheck[]>([]);
-  const [mapReady, setMapReady] = useState(false);
+  const [diagnostics, setDiagnostics] = useState<string[]>([]);
+  const [currentStep, setCurrentStep] = useState<string>('Starting diagnostics...');
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState<boolean>(false);
 
-  // Initialize diagnostics
+  const addLog = (message: string) => {
+    console.log(`[MapboxMap] ${message}`);
+    setDiagnostics(prev => [...prev, `${new Date().toLocaleTimeString()}: ${message}`]);
+    setCurrentStep(message);
+  };
+
+  const addError = (message: string, details?: any) => {
+    console.error(`[MapboxMap] ${message}`, details);
+    setDiagnostics(prev => [...prev, `❌ ${new Date().toLocaleTimeString()}: ${message}`]);
+    setCurrentStep(message);
+    setError(message);
+  };
+
   useEffect(() => {
-    const checks: DiagnosticCheck[] = [
-      { name: 'Environment Variable', status: 'pending', message: 'Checking VITE_MAPBOX_TOKEN...' },
-      { name: 'Token Format', status: 'pending', message: 'Validating token format...' },
-      { name: 'Container Element', status: 'pending', message: 'Checking DOM container...' },
-      { name: 'Mapbox GL JS', status: 'pending', message: 'Testing Mapbox library...' },
-      { name: 'Map Initialization', status: 'pending', message: 'Creating map instance...' },
-      { name: 'Style Loading', status: 'pending', message: 'Loading map style...' }
-    ];
-    
-    setDiagnostics(checks);
-    runDiagnostics(checks);
-  }, []);
-
-  const updateDiagnostic = (name: string, status: 'success' | 'error', message: string, details?: string) => {
-    setDiagnostics(prev => prev.map(check => 
-      check.name === name ? { ...check, status, message, details } : check
-    ));
-  };
-
-  const runDiagnostics = async (checks: DiagnosticCheck[]) => {
-    // Check 1: Environment Variable
-    const token = import.meta.env.VITE_MAPBOX_TOKEN;
-    if (!token || token.trim() === '') {
-      updateDiagnostic('Environment Variable', 'error', 'Missing VITE_MAPBOX_TOKEN', 
-        'Add VITE_MAPBOX_TOKEN to your .env file');
-      return;
-    }
-    updateDiagnostic('Environment Variable', 'success', `Token found: ${token.substring(0, 20)}...`);
-
-    // Check 2: Token Format
-    if (!token.startsWith('pk.')) {
-      updateDiagnostic('Token Format', 'error', 'Invalid token format', 
-        'Mapbox tokens should start with "pk."');
-      return;
-    }
-    updateDiagnostic('Token Format', 'success', 'Token format is valid');
-
-    // Check 2.5: Token Validation via API
-    try {
-      const response = await fetch(`https://api.mapbox.com/tokens/v2?access_token=${token}`);
-      if (!response.ok) {
-        updateDiagnostic('Token Format', 'error', 'Token validation failed', 
-          `HTTP ${response.status}: Token may be invalid or expired`);
-        return;
-      }
-      const tokenInfo = await response.json();
-      updateDiagnostic('Token Format', 'success', 
-        `Token valid - Scopes: ${tokenInfo.scopes?.join(', ') || 'Unknown'}`);
-    } catch (error) {
-      updateDiagnostic('Token Format', 'error', 'Token validation failed', 
-        'Cannot verify token with Mapbox API');
-      // Continue anyway - might be network issue
-    }
-
-    // Check 3: Container Element
-    await new Promise(resolve => setTimeout(resolve, 100)); // Wait for DOM
-    if (!mapContainer.current) {
-      updateDiagnostic('Container Element', 'error', 'Map container not found', 
-        'DOM element is not available');
-      return;
-    }
-    const rect = mapContainer.current.getBoundingClientRect();
-    updateDiagnostic('Container Element', 'success', 
-      `Container ready (${rect.width}x${rect.height}px)`);
-
-    // Check 4: Mapbox GL JS
-    try {
-      updateDiagnostic('Mapbox GL JS', 'success', `Mapbox GL JS v${mapboxgl.version} loaded`);
-    } catch (error) {
-      updateDiagnostic('Mapbox GL JS', 'error', 'Mapbox GL JS not available', 
-        error instanceof Error ? error.message : 'Unknown error');
-      return;
-    }
-
-    // Check 5: Map Initialization
-    try {
-      if (map.current) {
-        map.current.remove();
-      }
-
-      map.current = new mapboxgl.Map({
-        container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/streets-v12', // Try simpler style first
-        center: [restaurantLocation.lng, restaurantLocation.lat],
-        zoom: 11.5,
-        accessToken: token // Explicitly set token
-      });
-
-      updateDiagnostic('Map Initialization', 'success', 'Map instance created');
-
-      // Check 6: Style Loading
-      map.current.on('load', () => {
-        updateDiagnostic('Style Loading', 'success', 'Map style loaded successfully');
-        setMapReady(true);
-        
-        // Add basic markers once map is ready
-        addMarkers();
-      });
-
-      map.current.on('error', (e) => {
-        console.error('Mapbox error:', e);
-        const errorMsg = e.error?.message || e.message || 'Unknown map error';
-        updateDiagnostic('Style Loading', 'error', 'Failed to load map style', errorMsg);
-        
-        // Try fallback style
-        if (map.current && !e.error?.message?.includes('streets-v11')) {
-          setTimeout(() => {
-            updateDiagnostic('Style Loading', 'pending', 'Trying fallback style...');
-            map.current?.setStyle('mapbox://styles/mapbox/streets-v11');
-          }, 1000);
-        }
-      });
-
-      map.current.on('styleimagemissing', (e) => {
-        console.warn('Style image missing:', e.id);
-        // Continue - this is not critical
-      });
-
-    } catch (error) {
-      updateDiagnostic('Map Initialization', 'error', 'Failed to create map', 
-        error instanceof Error ? error.message : 'Unknown error');
-    }
-  };
-
-  const addMarkers = () => {
-    if (!map.current || !mapReady) return;
-
-    // Add restaurant marker
-    const restaurantEl = document.createElement('div');
-    restaurantEl.innerHTML = '🍕';
-    restaurantEl.style.fontSize = '32px';
-    restaurantEl.style.cursor = 'pointer';
-
-    new mapboxgl.Marker({ element: restaurantEl })
-      .setLngLat([restaurantLocation.lng, restaurantLocation.lat])
-      .setPopup(new mapboxgl.Popup({ offset: 30 }).setHTML(`
-        <div style="padding: 8px;">
-          <h3 style="margin: 0 0 4px 0; font-size: 14px;">🍕 ${restaurantLocation.name}</h3>
-          <p style="margin: 0; font-size: 12px; color: #666;">${restaurantLocation.address}</p>
-        </div>
-      `))
-      .addTo(map.current);
-
-    // Add order markers
-    orders.forEach((order, index) => {
-      const orderEl = document.createElement('div');
-      orderEl.style.cssText = `
-        background: #3b82f6;
-        border: 2px solid white;
-        border-radius: 50%;
-        width: 24px;
-        height: 24px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: bold;
-        font-size: 10px;
-        color: white;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.2);
-        cursor: pointer;
-      `;
-      orderEl.textContent = (index + 1).toString();
-
-      orderEl.addEventListener('click', () => onOrderSelect(order));
-
-      new mapboxgl.Marker({ element: orderEl })
-        .setLngLat([order.deliveryLocation.lng, order.deliveryLocation.lat])
-        .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(`
-          <div style="padding: 8px; max-width: 200px;">
-            <div style="font-weight: bold; margin-bottom: 4px;">${order.customerName}</div>
-            <div style="color: #10b981; font-weight: bold; margin-bottom: 4px;">$${order.totalAmount.toFixed(2)}</div>
-            <div style="font-size: 11px; color: #666;">${order.deliveryAddress}</div>
-          </div>
-        `))
-        .addTo(map.current!);
-    });
-  };
-
-  // Cleanup
-  useEffect(() => {
+    initializeMap();
     return () => {
       if (map.current) {
         map.current.remove();
+        map.current = null;
       }
     };
   }, []);
 
-  const getStatusIcon = (status: DiagnosticCheck['status']) => {
-    switch (status) {
-      case 'success': return <CheckCircle className="w-4 h-4 text-green-500" />;
-      case 'error': return <XCircle className="w-4 h-4 text-red-500" />;
-      case 'pending': return <Clock className="w-4 h-4 text-yellow-500 animate-spin" />;
+  const initializeMap = async () => {
+    try {
+      setDiagnostics([]);
+      setError(null);
+      setSuccess(false);
+
+      // Step 1: Check token
+      addLog('Step 1: Checking Mapbox token...');
+      if (!MAPBOX_TOKEN) {
+        addError('No VITE_MAPBOX_TOKEN found in environment variables');
+        return;
+      }
+      
+      if (!MAPBOX_TOKEN.startsWith('pk.')) {
+        addError('Invalid token format - should start with pk.');
+        return;
+      }
+      
+      addLog(`Token found: ${MAPBOX_TOKEN.substring(0, 20)}...`);
+
+      // Step 2: Test token validity
+      addLog('Step 2: Testing token with Mapbox API...');
+      try {
+        const response = await fetch(`https://api.mapbox.com/tokens/v2?access_token=${MAPBOX_TOKEN}`);
+        if (!response.ok) {
+          addError(`Token validation failed: HTTP ${response.status} - ${response.statusText}`);
+          if (response.status === 401) {
+            addError('Token is invalid or expired. Generate a new one at https://account.mapbox.com/access-tokens/');
+          }
+          return;
+        }
+        const tokenInfo = await response.json();
+        addLog(`Token is valid. Scopes: ${tokenInfo.scopes?.join(', ') || 'None specified'}`);
+      } catch (fetchError) {
+        addError('Network error testing token - continuing anyway', fetchError);
+      }
+
+      // Step 3: Check container
+      addLog('Step 3: Checking map container...');
+      if (!mapContainer.current) {
+        addError('Map container element not found');
+        return;
+      }
+      
+      const rect = mapContainer.current.getBoundingClientRect();
+      if (rect.width === 0 || rect.height === 0) {
+        addError(`Container has no dimensions: ${rect.width}x${rect.height}`);
+        return;
+      }
+      
+      addLog(`Container ready: ${rect.width}x${rect.height}px`);
+
+      // Step 4: Remove existing map
+      if (map.current) {
+        addLog('Step 4: Cleaning up existing map...');
+        map.current.remove();
+        map.current = null;
+      }
+
+      // Step 5: Create map with minimal config
+      addLog('Step 5: Creating map instance...');
+      
+      map.current = new mapboxgl.Map({
+        container: mapContainer.current,
+        style: 'mapbox://styles/mapbox/streets-v11', // Using older, more stable style
+        center: [restaurantLocation.lng, restaurantLocation.lat],
+        zoom: 12,
+        accessToken: MAPBOX_TOKEN
+      });
+
+      addLog('Map instance created');
+
+      // Step 6: Wait for map to load
+      addLog('Step 6: Waiting for map to load...');
+      
+      map.current.on('load', () => {
+        addLog('✅ Map loaded successfully!');
+        setSuccess(true);
+        addMarkersToMap();
+      });
+
+      map.current.on('error', (e) => {
+        const errorMsg = e.error?.message || e.message || 'Unknown map error';
+        addError(`Map error: ${errorMsg}`, e);
+        
+        // Try even simpler style
+        if (map.current && !errorMsg.includes('streets-v9')) {
+          addLog('Trying fallback style: streets-v9...');
+          setTimeout(() => {
+            if (map.current) {
+              map.current.setStyle('mapbox://styles/mapbox/streets-v9');
+            }
+          }, 1000);
+        }
+      });
+
+      // Timeout after 10 seconds
+      setTimeout(() => {
+        if (!success && !error) {
+          addError('Map loading timed out after 10 seconds');
+        }
+      }, 10000);
+
+    } catch (initError) {
+      addError('Failed to initialize map', initError);
     }
   };
 
-  const allChecksComplete = diagnostics.every(check => check.status !== 'pending');
-  const hasErrors = diagnostics.some(check => check.status === 'error');
+  const addMarkersToMap = () => {
+    if (!map.current) return;
+
+    addLog('Adding markers to map...');
+
+    try {
+      // Restaurant marker
+      const restaurantEl = document.createElement('div');
+      restaurantEl.innerHTML = '🍕';
+      restaurantEl.style.fontSize = '24px';
+      restaurantEl.style.cursor = 'pointer';
+
+      new mapboxgl.Marker({ element: restaurantEl })
+        .setLngLat([restaurantLocation.lng, restaurantLocation.lat])
+        .setPopup(new mapboxgl.Popup({ offset: 25 }).setHTML(`
+          <div style="padding: 8px;">
+            <strong>${restaurantLocation.name}</strong><br>
+            ${restaurantLocation.address}
+          </div>
+        `))
+        .addTo(map.current);
+
+      // Order markers
+      orders.forEach((order, index) => {
+        const orderEl = document.createElement('div');
+        orderEl.style.cssText = `
+          background: #3b82f6;
+          border: 2px solid white;
+          border-radius: 50%;
+          width: 20px;
+          height: 20px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          font-size: 10px;
+          color: white;
+          font-weight: bold;
+          cursor: pointer;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        `;
+        orderEl.textContent = (index + 1).toString();
+
+        orderEl.addEventListener('click', () => onOrderSelect(order));
+
+        new mapboxgl.Marker({ element: orderEl })
+          .setLngLat([order.deliveryLocation.lng, order.deliveryLocation.lat])
+          .setPopup(new mapboxgl.Popup({ offset: 15 }).setHTML(`
+            <div style="padding: 8px;">
+              <strong>${order.customerName}</strong><br>
+              $${order.totalAmount.toFixed(2)}<br>
+              <small>${order.deliveryAddress}</small>
+            </div>
+          `))
+          .addTo(map.current!);
+      });
+
+      addLog(`Added ${orders.length + 1} markers to map`);
+    } catch (markerError) {
+      addError('Failed to add markers', markerError);
+    }
+  };
+
+  const retryMap = () => {
+    initializeMap();
+  };
 
   return (
     <div className="relative w-full h-full">
       {/* Diagnostics Panel */}
-      {(!allChecksComplete || hasErrors) && (
-        <div className="absolute top-4 left-4 z-20 bg-white rounded-lg shadow-lg p-4 max-w-md">
-          <div className="flex items-center mb-3">
-            <AlertTriangle className="w-5 h-5 text-yellow-500 mr-2" />
+      <div className="absolute top-4 left-4 z-20 bg-white rounded-lg shadow-lg p-4 max-w-md max-h-96 overflow-y-auto">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center">
+            {success ? (
+              <CheckCircle className="w-5 h-5 text-green-500 mr-2" />
+            ) : error ? (
+              <XCircle className="w-5 h-5 text-red-500 mr-2" />
+            ) : (
+              <Clock className="w-5 h-5 text-yellow-500 mr-2 animate-spin" />
+            )}
             <h3 className="font-bold text-gray-900">Map Diagnostics</h3>
           </div>
-          
-          <div className="space-y-2">
-            {diagnostics.map((check) => (
-              <div key={check.name} className="flex items-start space-x-2">
-                {getStatusIcon(check.status)}
-                <div className="flex-1 min-w-0">
-                  <div className="text-sm font-medium text-gray-900">{check.name}</div>
-                  <div className="text-xs text-gray-600">{check.message}</div>
-                  {check.details && (
-                    <div className="text-xs text-red-600 mt-1">{check.details}</div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {hasErrors && (
-            <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded text-xs">
-              <strong className="text-red-800">Fix the errors above to load the map.</strong>
-            </div>
-          )}
+          <button
+            onClick={retryMap}
+            className="p-1 text-gray-500 hover:text-gray-700"
+            title="Retry map loading"
+          >
+            <RefreshCw className="w-4 h-4" />
+          </button>
         </div>
-      )}
+
+        <div className="mb-3">
+          <div className="text-sm font-medium text-gray-900 mb-1">Current Status:</div>
+          <div className={`text-sm ${success ? 'text-green-600' : error ? 'text-red-600' : 'text-yellow-600'}`}>
+            {currentStep}
+          </div>
+        </div>
+
+        <div className="space-y-1">
+          <div className="text-xs font-medium text-gray-700 mb-2">Debug Log:</div>
+          {diagnostics.slice(-8).map((log, index) => (
+            <div key={index} className="text-xs text-gray-600 font-mono bg-gray-50 p-1 rounded">
+              {log}
+            </div>
+          ))}
+        </div>
+
+        {error && (
+          <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded text-xs">
+            <strong className="text-red-800">Error Details:</strong>
+            <div className="text-red-700 mt-1">{error}</div>
+          </div>
+        )}
+
+        {success && (
+          <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded text-xs">
+            <strong className="text-green-800">Success!</strong>
+            <div className="text-green-700 mt-1">
+              Map loaded with {orders.length} delivery locations
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Map Container */}
       <div 
         ref={mapContainer} 
-        className="w-full h-full"
-        style={{ minHeight: '500px' }}
+        className="w-full h-full bg-gray-100"
+        style={{ minHeight: '400px' }}
       />
+
+      {/* Loading overlay */}
+      {!success && !error && (
+        <div className="absolute inset-0 bg-gray-100 flex items-center justify-center">
+          <div className="text-center">
+            <Clock className="w-8 h-8 text-blue-500 animate-spin mx-auto mb-2" />
+            <div className="text-gray-600 font-medium">Loading map...</div>
+            <div className="text-gray-500 text-sm mt-1">{currentStep}</div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
