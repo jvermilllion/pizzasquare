@@ -1,7 +1,6 @@
 import React, { useMemo, useState } from 'react';
 import { Archive, ArrowLeft, History } from 'lucide-react';
 import { Order } from '../types/orders';
-import { restaurantLocation } from '../data/realData';
 
 // Color palette for routes
 const ROUTE_COLORS = [
@@ -19,6 +18,7 @@ const ROUTE_COLORS = [
 
 interface DeliveryRoutesProps {
   orders: Order[];
+  businessLocation: { name: string; address: string; lat: number; lng: number };
   selectedOrder?: Order | null;
   onUpdateOrderStatus: (orderId: string, status: Order['status']) => void;
   onOrderSelect: (order: Order) => void;
@@ -90,7 +90,7 @@ function calculateRouteTime(orders: Order[]): number {
 }
 
 // Group orders into 45-minute round trip routes using nearest neighbor algorithm
-function groupOrdersIntoRoutes(orders: Order[]): RouteGroup[] {
+function groupOrdersIntoRoutes(orders: Order[], businessLocation: { name: string; address: string; lat: number; lng: number }): RouteGroup[] {
   if (orders.length === 0) return [];
 
   const routes: RouteGroup[] = [];
@@ -99,7 +99,7 @@ function groupOrdersIntoRoutes(orders: Order[]): RouteGroup[] {
 
   while (unassignedOrders.length > 0) {
     const currentRoute: Order[] = [];
-    let currentLocation = restaurantLocation;
+    let currentLocation = businessLocation;
     let totalTime = 0;
 
     // Start with the first unassigned order
@@ -116,7 +116,7 @@ function groupOrdersIntoRoutes(orders: Order[]): RouteGroup[] {
       // Calculate return distance to restaurant
       const returnDistance = calculateDistance(
         nextOrder.deliveryLocation.lat, nextOrder.deliveryLocation.lng,
-        restaurantLocation.lat, restaurantLocation.lng
+        businessLocation.lat, businessLocation.lng
       );
       
       // Estimate time for this addition (distance in miles * 2.5 minutes per mile + 3 minutes per stop)
@@ -180,6 +180,7 @@ function groupOrdersIntoRoutes(orders: Order[]): RouteGroup[] {
 
 export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({ 
   orders, 
+  businessLocation,
   selectedOrder,
   onUpdateOrderStatus, 
   onOrderSelect,
@@ -193,8 +194,7 @@ export const DeliveryRoutes: React.FC<DeliveryRoutesProps> = ({
   const [dragOverTarget, setDragOverTarget] = useState<{ type: 'route' | 'queue'; index?: number } | null>(null);
 
   const routeGroups = useMemo(() => {
-    const defaultLocation = { name: 'Restaurant', address: '123 Main St', lat: 41.5623, lng: -72.6509 };
-    return groupOrdersIntoRoutes(orders, businessLocation || defaultLocation);
+    return groupOrdersIntoRoutes(orders, businessLocation);
   }, [orders, businessLocation]);
 
   const handleArchiveRoute = (routeId: string) => {
