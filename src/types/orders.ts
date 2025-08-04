@@ -23,4 +23,9 @@ export interface Order {
   specialInstructions?: string;
   estimatedDeliveryTime?: string;
   distance?: string;
+  readyTime?: string;
+  pickedUpTime?: string;
+  deliveredTime?: string;
+  archived?: boolean;
+  archivedAt?: string;
 }

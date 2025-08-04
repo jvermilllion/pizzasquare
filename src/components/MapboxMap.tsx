@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import MapboxDraw from '@mapbox/mapbox-gl-draw';
 import 'mapbox-gl/dist/mapbox-gl.css';
@@ -94,6 +94,8 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   const map = useRef<mapboxgl.Map | null>(null);
   const markers = useRef<mapboxgl.Marker[]>([]);
   const draw = useRef<MapboxDraw | null>(null);
+  const [isZoomedIn, setIsZoomedIn] = useState(false);
+  const [originalView, setOriginalView] = useState<{ center: [number, number]; zoom: number } | null>(null);
 
   useEffect(() => {
     initializeMap();
@@ -114,10 +116,70 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
   }, [orders, selectedOrder]);
 
   useEffect(() => {
+    if (selectedOrder && map.current && !isDrawingMode) {
+      zoomToOrder(selectedOrder);
+    }
+  }, [selectedOrder, isDrawingMode]);
+
+  useEffect(() => {
     if (map.current && draw.current) {
       toggleDrawingMode();
     }
   }, [isDrawingMode]);
+
+  const zoomToOrder = (order: Order) => {
+    if (!map.current) return;
+
+    // Store current view if not already stored
+    if (!originalView) {
+      const currentCenter = map.current.getCenter();
+      const currentZoom = map.current.getZoom();
+      setOriginalView({
+        center: [currentCenter.lng, currentCenter.lat],
+        zoom: currentZoom
+      });
+    }
+
+    // Zoom to the order location
+    map.current.flyTo({
+      center: [order.deliveryLocation.lng, order.deliveryLocation.lat],
+      zoom: 16,
+      duration: 1500,
+      essential: true
+    });
+
+    setIsZoomedIn(true);
+  };
+
+  const zoomBack = () => {
+    if (!map.current || !originalView) return;
+
+    map.current.flyTo({
+      center: originalView.center,
+      zoom: originalView.zoom,
+      duration: 1500,
+      essential: true
+    });
+
+    setIsZoomedIn(false);
+    setOriginalView(null);
+    onOrderSelect(null);
+  };
+
+  const resetView = () => {
+    if (!map.current) return;
+
+    map.current.flyTo({
+      center: [businessLocation.lng, businessLocation.lat],
+      zoom: 12,
+      duration: 1500,
+      essential: true
+    });
+
+    setIsZoomedIn(false);
+    setOriginalView(null);
+    onOrderSelect(null);
+  };
 
   const initializeMap = async () => {
     if (!MAPBOX_TOKEN || !mapContainer.current) return;
@@ -240,7 +302,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
           <p style="margin: 0; color: #666; font-size: 13px;">${businessLocation.address}</p>
         </div>
       `))
-      .addTo(map.current);
+      .addTo(map.current!);
 
     markers.current.push(restaurantMarker);
 
@@ -302,7 +364,7 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
             </div>
           </div>
         `))
-        .addTo(map.current);
+        .addTo(map.current!);
 
       markers.current.push(orderMarker);
     });
@@ -464,6 +526,47 @@ const MapboxMap: React.FC<MapboxMapProps> = ({
         className="w-full h-full"
         style={{ minHeight: '400px' }}
       />
+      
+      {/* Zoom Controls */}
+      <div className="absolute top-4 right-4 z-10 flex flex-col space-y-2">
+        {isZoomedIn && (
+          <button
+            onClick={zoomBack}
+            className="bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg shadow-lg border border-gray-200 text-sm font-medium transition-colors flex items-center"
+          >
+            ← Back to Overview
+          </button>
+        )}
+        <button
+          onClick={resetView}
+          className="bg-white hover:bg-gray-50 text-gray-700 px-4 py-2 rounded-lg shadow-lg border border-gray-200 text-sm font-medium transition-colors"
+        >
+          🏠 Reset View
+        </button>
+      </div>
+      
+      {/* Selected Order Info */}
+      {selectedOrder && isZoomedIn && (
+        <div className="absolute bottom-4 left-4 right-4 z-10">
+          <div className="bg-white rounded-lg shadow-lg border border-gray-200 p-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-gray-900">{selectedOrder.customerName}</h3>
+                <p className="text-sm text-gray-600">{selectedOrder.deliveryAddress}</p>
+                <p className="text-sm text-gray-500 mt-1">
+                  Order #{selectedOrder.squareOrderId} • ${selectedOrder.totalAmount.toFixed(2)}
+                </p>
+              </div>
+              <button
+                onClick={() => onOrderSelect(null)}
+                className="text-gray-400 hover:text-gray-600 ml-4"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

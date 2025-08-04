@@ -1,5 +1,6 @@
 import { Order } from '../types/orders';
 
+// Function to get business location from settings or use default
 export const getBusinessLocation = () => {
   const defaultLocation = {
     name: "Square Bistro",
@@ -16,10 +17,13 @@ export const getBusinessLocation = () => {
   };
 };
 
+// Function to generate random coordinates within delivery radius of business location
 const generateLocalCoordinates = (businessLat: number, businessLng: number, radiusMiles: number = 2) => {
-  const latDegreesMile = 1 / 69;
-  const lngDegreesMile = 1 / (69 * Math.cos(businessLat * Math.PI / 180));
+  // Convert miles to approximate degrees (rough approximation)
+  const latDegreesMile = 1 / 69; // 1 degree latitude ≈ 69 miles
+  const lngDegreesMile = 1 / (69 * Math.cos(businessLat * Math.PI / 180)); // longitude varies by latitude
   
+  // Generate random offset within circular radius
   const angle = Math.random() * 2 * Math.PI;
   const distance = Math.random() * radiusMiles;
   
@@ -32,42 +36,73 @@ const generateLocalCoordinates = (businessLat: number, businessLng: number, radi
   };
 };
 
+// Function to generate mock local addresses
+const generateLocalAddress = (businessLocation: ReturnType<typeof getBusinessLocation>, index: number) => {
+  const streetNames = [
+    'Oak Street', 'Pine Avenue', 'Maple Drive', 'Cedar Lane', 'Elm Street',
+    'Birch Road', 'Willow Way', 'Cherry Street', 'Hickory Lane', 'Ash Avenue'
+  ];
+  
+  const streetNumbers = [
+    '123', '456', '789', '234', '567', '890', '345', '678', '901', '432'
+  ];
+  
+  // Extract city, state, zip from business address
+  const businessParts = businessLocation.address.split(',');
+  const cityStateZip = businessParts.length > 1 ? businessParts.slice(1).join(',').trim() : 'Local City, ST 12345';
+  
+  const streetName = streetNames[index % streetNames.length];
+  const streetNumber = streetNumbers[index % streetNumbers.length];
+  
+  return `${streetNumber} ${streetName}, ${cityStateZip}`;
+};
+
+// Function to generate mock orders relative to business location
 export const generateMockOrders = (): Order[] => {
   const businessLocation = getBusinessLocation();
   
-  const customers = [
-    { name: 'Sarah Johnson', phone: '(555) 123-0001' },
-    { name: 'Mike Chen', phone: '(555) 123-0002' },
-    { name: 'Emily Rodriguez', phone: '(555) 123-0003' },
-    { name: 'David Wilson', phone: '(555) 123-0004' },
-    { name: 'Lisa Park', phone: '(555) 123-0005' }
+  const customerNames = [
+    'Sarah Johnson', 'Mike Chen', 'Emily Rodriguez', 'David Wilson', 
+    'Lisa Park', 'James Thompson', 'Maria Garcia', 'Robert Kim'
+  ];
+  
+  const phoneNumbers = [
+    '(555) 123-0001', '(555) 123-0002', '(555) 123-0003', '(555) 123-0004',
+    '(555) 123-0005', '(555) 123-0006', '(555) 123-0007', '(555) 123-0008'
   ];
 
-  return customers.map((customer, index) => {
+  return customerNames.map((name, index) => {
     const location = generateLocalCoordinates(businessLocation.lat, businessLocation.lng);
-    const distance = Math.sqrt(
-      Math.pow(location.lat - businessLocation.lat, 2) + 
-      Math.pow(location.lng - businessLocation.lng, 2)
-    ) * 69;
+    const address = generateLocalAddress(businessLocation, index);
+    
+    // Calculate approximate distance
+    const latDiff = location.lat - businessLocation.lat;
+    const lngDiff = location.lng - businessLocation.lng;
+    const distance = Math.sqrt(latDiff * latDiff + lngDiff * lngDiff) * 69; // rough miles
     
     return {
       id: (index + 1).toString(),
       squareOrderId: `sq_00${index + 1}`,
-      customerName: customer.name,
-      customerPhone: customer.phone,
-      items: [{ name: "Pizza", quantity: 1, price: 18.99 }],
+      customerName: name,
+      customerPhone: phoneNumbers[index],
+      items: [
+        { name: "Pizza", quantity: 1, price: 18.99 }
+      ],
       totalAmount: 18.99,
-      status: index < 2 ? 'ready' as const : 'preparing' as const,
+      status: index < 2 ? 'ready' as const : index < 4 ? 'preparing' as const : 'pending' as const,
       priority: 'medium' as const,
       createdAt: new Date(Date.now() - (index + 1) * 10 * 60 * 1000).toISOString(),
-      deliveryAddress: `${100 + index} Main Street, Local City`,
+      deliveryAddress: address,
       deliveryLocation: location,
       paymentMethod: "Square",
       orderSource: 'app' as const,
-      distance: `${distance.toFixed(1)} mi`
+      distance: `${distance.toFixed(1)} mi`,
+      archived: false,
+      archivedAt: undefined
     };
   });
 };
 
+// Export the current business location and mock orders
 export const restaurantLocation = getBusinessLocation();
 export const mockOrders = generateMockOrders();
