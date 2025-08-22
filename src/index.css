@@ -1,6 +1,8 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+@import 'mapbox-gl/dist/mapbox-gl.css';
+@import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
 
 :root {
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;

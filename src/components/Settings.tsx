@@ -6,12 +6,12 @@ interface SettingsProps {
 }
 
 export const Settings: React.FC<SettingsProps> = ({ onNavigateBack }) => {
-  const [squareToken, setSquareToken] = useState((import.meta as any).env.VITE_SQUARE_ACCESS_TOKEN || '');
-  const [locationId, setLocationId] = useState((import.meta as any).env.VITE_SQUARE_LOCATION_ID || '');
-  const [environment, setEnvironment] = useState((import.meta as any).env.VITE_SQUARE_ENVIRONMENT || 'sandbox');
+  const [squareToken, setSquareToken] = useState((import.meta as any).env?.VITE_SQUARE_ACCESS_TOKEN || '');
+  const [locationId, setLocationId] = useState((import.meta as any).env?.VITE_SQUARE_LOCATION_ID || '');
+  const [environment, setEnvironment] = useState((import.meta as any).env?.VITE_SQUARE_ENVIRONMENT || 'sandbox');
   const [pollingInterval, setPollingInterval] = useState(30);
   const [autoRefresh, setAutoRefresh] = useState(true);
-  const [mapboxToken, setMapboxToken] = useState((import.meta as any).env.VITE_MAPBOX_TOKEN || '');
+  const [mapboxToken, setMapboxToken] = useState((import.meta as any).env?.VITE_MAPBOX_TOKEN || '');
   
   // Business Location Settings
   const [businessName, setBusinessName] = useState(

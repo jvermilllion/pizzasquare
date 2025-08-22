@@ -8,13 +8,11 @@ export function useSquareOrders(locationId?: string) {
   const [error, setError] = useState<string | null>(null);
 
   const loadOrders = async () => {
-    if (!locationId) return;
-    
     setLoading(true);
     setError(null);
     
     try {
-      const squareOrders = await fetchSquareOrders(locationId);
+      const squareOrders = await fetchSquareOrders();
       
       // Geocode addresses for orders that need it
       const ordersWithCoordinates = await Promise.all(

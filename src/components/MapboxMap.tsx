@@ -1,13 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import mapboxgl from 'mapbox-gl';
 import MapboxDraw from '@mapbox/mapbox-gl-draw';
-import 'mapbox-gl/dist/mapbox-gl.css';
-import '@mapbox/mapbox-gl-draw/dist/mapbox-gl-draw.css';
 import { formatDistanceToNow } from 'date-fns';
 import { Order } from '../types/orders';
 
 // Set Mapbox access token
-const MAPBOX_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN || '';
+const MAPBOX_TOKEN = (import.meta as any).env?.VITE_MAPBOX_TOKEN || '';
 mapboxgl.accessToken = MAPBOX_TOKEN;
 
 // Default delivery area polygon for Middletown Valley

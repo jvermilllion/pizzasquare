@@ -110,10 +110,6 @@ export async function fetchSquareOrders(): Promise<any[]> {
 
 // Mock implementation - in production, this should call your backend API
 export async function updateSquareOrderFulfillment(
-  // These parameters would be used in a real backend integration:
-  // orderId: string, 
-  // fulfillmentUid: string, 
-  // state: string
 ): Promise<void> {
   try {
     // This should call your backend API endpoint instead

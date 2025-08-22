@@ -7,8 +7,8 @@ interface SquareIntegrationProps {
 }
 
 export const SquareIntegration: React.FC<SquareIntegrationProps> = ({ onOrdersLoaded }) => {
-  const [locationId] = useState(import.meta.env.VITE_SQUARE_LOCATION_ID || '');
-  const [isConfigured] = useState(!!import.meta.env.VITE_SQUARE_ACCESS_TOKEN);
+  const [locationId] = useState((import.meta as any).env?.VITE_SQUARE_LOCATION_ID || '');
+  const [isConfigured] = useState(!!((import.meta as any).env?.VITE_SQUARE_ACCESS_TOKEN));
   
   const { orders, loading, error, refetch } = useSquareOrders(locationId);
 

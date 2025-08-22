@@ -1,16 +1,21 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
-import path from 'path'
 
 export default defineConfig({
   plugins: [react()],
-  resolve: {
-    alias: {
-      'react': path.resolve('./node_modules/react'),
-      'react-dom': path.resolve('./node_modules/react-dom')
-    }
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          vendor: ['react', 'react-dom'],
+          mapbox: ['mapbox-gl', '@mapbox/mapbox-gl-draw'],
+          ui: ['lucide-react', 'date-fns']
+        }
+      }
+    },
+    chunkSizeWarningLimit: 1000
   },
-  optimizeDeps: {
-    include: ['react', 'react-dom']
+  define: {
+    global: 'globalThis'
   }
 })

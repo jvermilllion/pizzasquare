@@ -19,10 +19,6 @@ export const getBusinessLocation = () => {
 
 // Function to generate random coordinates within delivery radius of business location
 const generateLocalCoordinates = (businessLat: number, businessLng: number, radiusMiles: number = 2) => {
-  // Convert miles to approximate degrees (rough approximation)
-  const latDegreesMile = 1 / 69; // 1 degree latitude ≈ 69 miles
-  const lngDegreesMile = 1 / (69 * Math.cos(businessLat * Math.PI / 180)); // longitude varies by latitude
-  
   // Generate random offset within circular radius
   const angle = Math.random() * 2 * Math.PI;
   const distance = Math.random() * radiusMiles;
